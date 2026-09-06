@@ -50,6 +50,9 @@ void HyraxDsp::reset()
 
     lufs_.reset();
 
+    osL_.reset();
+    osR_.reset();
+
     senseUpdateCtr_ = 0;
     // Note: senseOffsetDb_ is intentionally NOT cleared here so the SENSE
     // offset persists across transport restarts (matching the JSFX, which
@@ -74,6 +77,9 @@ void HyraxDsp::setParameters(const Params& p)
     userThresholdDb_ = p.thresholdDb;
     ceiling_ = dbToLin(p.ceilingDb);
     updateThreshold();
+
+    // Ceiling-tied safety clipper: knee spans from the Ceiling up to 0 dBFS.
+    softClip_.configure(0.0, std::max(0.0, -p.ceilingDb));
 
     // Look-ahead in samples, clamped to the allocated buffer.
     int look = static_cast<int>(std::floor(p.lookAheadMs * 0.001 * sampleRate_));
@@ -173,17 +179,40 @@ void HyraxDsp::processSample(double& left, double& right)
     const double gr = 1.0 - (link_ * dFinal + (1.0 - link_) * drOwn);
 
     // --- read delayed audio and apply gain + makeup ---
-    const double outL = left_.back(lookSamples_) * gl * makeup_;
-    const double outR = right_.back(lookSamples_) * gr * makeup_;
+    double outL = left_.back(lookSamples_) * gl * makeup_;
+    double outR = right_.back(lookSamples_) * gr * makeup_;
 
     left_.advance();
     right_.advance();
     peak_.advance();
 
+    // --- output true-peak safety clipper: 4x oversampled soft clip so genuine
+    // inter-sample peaks that escaped the limiter are caught, guaranteeing the
+    // output never exceeds 0 dBFS. Adds Oversampler::kLatencySamples of latency.
+    double up[cotg::dsp::Oversampler::kOS];
+    osL_.upsample(outL, up);
+    for (double& s : up)
+        s = softClip_.clip(s);
+    outL = osL_.downsample(up);
+
+    osR_.upsample(outR, up);
+    for (double& s : up)
+        s = softClip_.clip(s);
+    outR = osR_.downsample(up);
+
+    // Absolute sample-domain guarantee: no output sample exceeds 0 dBFS. The
+    // decimation filter can leave a hair of overshoot past what the soft clip
+    // caught; this hard clamp (which engages essentially never) makes "the
+    // output never actually clips" a hard guarantee. Inter-sample (true) peaks
+    // are strongly reduced by the oversampled soft clip but, being a clipper
+    // rather than a true-peak limiter, not guaranteed below 0 dBTP.
+    outL = std::clamp(outL, -1.0, 1.0);
+    outR = std::clamp(outR, -1.0, 1.0);
+
     left = outL;
     right = outR;
 
-    // --- short-term LUFS on the output ---
+    // --- short-term LUFS on the final output ---
     lufs_.process(outL, outR);
 
     // --- SENSE closed loop: ride the threshold toward the target LUFS ---

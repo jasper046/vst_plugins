@@ -100,7 +100,8 @@ uint32 PLUGIN_API HyraxProcessor::getLatencySamples()
     // restart when the Look-Ahead parameter is edited, so the host re-reads this.
     const double la = toPlain(kLookAheadRange, norm_[kLookAhead]);
     const int s = std::max(1, static_cast<int>(std::floor(la * 0.001 * sampleRate_)));
-    return static_cast<uint32>(s);
+    // Plus the always-on oversampled safety clipper's fixed latency.
+    return static_cast<uint32>(s + cotg::dsp::Oversampler::kLatencySamples);
 }
 
 template <typename SampleT>

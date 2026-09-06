@@ -1,7 +1,9 @@
 #pragma once
 
 #include "cotg/dsp/LufsMeter.h"
+#include "cotg/dsp/Oversampler.h"
 #include "cotg/dsp/RingBuffer.h"
+#include "cotg/dsp/SoftClipper.h"
 
 namespace cotg::hyrax {
 
@@ -46,8 +48,12 @@ public:
     // Process one stereo sample in place.
     void processSample(double& left, double& right);
 
-    // Look-ahead latency in samples (report to the host).
-    int latencySamples() const { return lookSamples_; }
+    // Total latency in samples: look-ahead plus the always-on oversampled
+    // safety clipper.
+    int latencySamples() const
+    {
+        return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples;
+    }
 
     // Smoothed gain reduction, in dB (<= 0). 0 dB means no reduction.
     double gainReductionDb() const;
@@ -103,6 +109,14 @@ private:
 
     // --- LUFS metering ---
     cotg::dsp::LufsMeter lufs_;
+
+    // --- output true-peak safety clipper (4x oversampled, always on) ---
+    // Ceiling-tied: the soft knee runs from the limiter Ceiling up to 0 dBFS, so
+    // only peaks that escape past the Ceiling are bent and the output can never
+    // exceed full scale.
+    cotg::dsp::Oversampler osL_;
+    cotg::dsp::Oversampler osR_;
+    cotg::dsp::SoftClipper softClip_;
 
     // --- SENSE loop ---
     // The user's Threshold parameter and the SENSE-applied offset are kept

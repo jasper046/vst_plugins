@@ -19,6 +19,15 @@ mastering limiter: look-ahead peak limiting with a multi-stage release,
 optional true-peak detection, a BS.1770 short-term LUFS meter, and a **SENSE**
 loop that auto-rides the threshold toward a target loudness.
 
+It also has an always-on **safety clipper** as its final stage: a 4×-oversampled,
+ceiling-tied soft clip (the knee runs from the Ceiling up to 0 dBFS) followed by a
+base-rate hard clamp, so the output never actually clips (no sample exceeds
+0 dBFS) — replacing the manual brick-wall limiter you'd otherwise chain after it.
+It adds a small fixed latency (reported to the host). Peaks at or below the
+Ceiling pass untouched; only peaks that escape past it are bent. Note it is a soft
+clipper, not a true-peak limiter, so it strongly reduces but does not fully
+guarantee inter-sample peaks below 0 dBTP.
+
 ## Repository layout
 
 ```

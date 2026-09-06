@@ -46,22 +46,10 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
     parameters.addParameter(
         makeRange(STR16("Stereo Link"), kStereoLink, STR16("%"), kStereoLinkRange, ParameterInfo::kCanAutomate, 0, integerSteps(kStereoLinkRange)));
 
-    // Toggles: stepCount 1 makes hosts render a checkbox/button rather than a
-    // slider. Defaults match the processor (True Peak on, SENSE off).
+    // Toggle: stepCount 1 makes hosts render a checkbox/button rather than a
+    // slider. Default matches the processor (True Peak on).
     parameters.addParameter(STR16("True Peak"), nullptr, 1, kTruePeakDefaultNorm,
                             ParameterInfo::kCanAutomate, kTruePeak);
-
-    parameters.addParameter(
-        makeRange(STR16("Target LUFS"), kTargetLufs, STR16("LUFS"), kTargetLufsRange, ParameterInfo::kCanAutomate, 1));
-
-    parameters.addParameter(STR16("SENSE"), nullptr, 1, kSenseDefaultNorm,
-                            ParameterInfo::kCanAutomate, kSense);
-
-    // Read-only output meters (visible in the generic UI, driven by the processor).
-    parameters.addParameter(
-        makeRange(STR16("Gain Reduction"), kGrMeter, STR16("dB"), kGrMeterRange, ParameterInfo::kIsReadOnly, 1));
-    parameters.addParameter(
-        makeRange(STR16("Short-term LUFS"), kLufsMeter, STR16("LUFS"), kLufsMeterRange, ParameterInfo::kIsReadOnly, 1));
 
     return kResultTrue;
 }

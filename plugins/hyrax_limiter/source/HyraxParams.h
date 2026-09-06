@@ -6,9 +6,7 @@
 
 namespace cotg::hyrax {
 
-// Parameter identifiers. The first block are the automatable controls (one per
-// JSFX slider); the last two are read-only output meters. Keep meters last so
-// kNumAutomatable cleanly separates them.
+// Parameter identifiers (all automatable controls).
 enum ParamId : Steinberg::Vst::ParamID
 {
     kThreshold = 0,
@@ -17,15 +15,9 @@ enum ParamId : Steinberg::Vst::ParamID
     kRelease,
     kStereoLink,
     kTruePeak,
-    kTargetLufs,
-    kSense,
 
     kNumAutomatable,
-
-    kGrMeter = kNumAutomatable, // read-only
-    kLufsMeter,                 // read-only
-
-    kNumParams
+    kNumParams = kNumAutomatable
 };
 
 // Plain-value range for a linear parameter, matching the RangeParameter the
@@ -43,15 +35,9 @@ constexpr PRange kCeilingRange {-6.0, 0.0, -0.1};
 constexpr PRange kLookAheadRange {0.0, 20.0, 1.0};
 constexpr PRange kReleaseRange {50.0, 6000.0, 3000.0};
 constexpr PRange kStereoLinkRange {0.0, 100.0, 100.0};
-constexpr PRange kTargetLufsRange {-30.0, -5.0, -12.0};
 
-// Read-only meter ranges (used only for display scaling).
-constexpr PRange kGrMeterRange {-20.0, 0.0, 0.0};
-constexpr PRange kLufsMeterRange {-60.0, 0.0, -60.0};
-
-// Toggle defaults (normalized: 0 = Off, 1 = On).
+// Toggle default (normalized: 0 = Off, 1 = On).
 constexpr double kTruePeakDefaultNorm = 1.0; // On
-constexpr double kSenseDefaultNorm = 0.0;    // Off
 
 inline double toPlain(const PRange& r, double norm)
 {

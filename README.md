@@ -15,9 +15,8 @@ header-only library so each plugin reuses the same primitives.
 | **Hyrax Limiter** | ✅ v1 (full parity) | `hyrax_limiter.jsfx` |
 
 The Hyrax Limiter is a real-time causal port of the Matchering ("Hyrax")
-mastering limiter: look-ahead peak limiting with a multi-stage release,
-optional true-peak detection, a BS.1770 short-term LUFS meter, and a **SENSE**
-loop that auto-rides the threshold toward a target loudness.
+mastering limiter: look-ahead peak limiting with a multi-stage release and
+optional true-peak detection.
 
 It also has an always-on **safety clipper** as its final stage: a 4×-oversampled,
 ceiling-tied soft clip (the knee runs from the Ceiling up to 0 dBFS) followed by a

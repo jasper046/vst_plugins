@@ -27,8 +27,6 @@ void HyraxProcessor::initDefaults()
     norm_[kRelease] = toNorm(kReleaseRange, kReleaseRange.def);
     norm_[kStereoLink] = toNorm(kStereoLinkRange, kStereoLinkRange.def);
     norm_[kTruePeak] = kTruePeakDefaultNorm;
-    norm_[kTargetLufs] = toNorm(kTargetLufsRange, kTargetLufsRange.def);
-    norm_[kSense] = kSenseDefaultNorm;
 }
 
 void HyraxProcessor::applyParametersToEngine()
@@ -40,8 +38,6 @@ void HyraxProcessor::applyParametersToEngine()
     p.releaseMs = toPlain(kReleaseRange, norm_[kRelease]);
     p.stereoLinkPct = toPlain(kStereoLinkRange, norm_[kStereoLink]);
     p.truePeak = norm_[kTruePeak] >= 0.5;
-    p.targetLufs = toPlain(kTargetLufsRange, norm_[kTargetLufs]);
-    p.senseOn = norm_[kSense] >= 0.5;
     dsp_.setParameters(p);
 }
 
@@ -169,28 +165,6 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
             else
                 processChannels(data.inputs[0].channelBuffers64, data.outputs[0].channelBuffers64,
                                 numChannels, data.numSamples);
-        }
-    }
-
-    // --- 3) publish meters (SENSE runs entirely inside the engine, so no
-    // threshold write-back to the host is needed) ---
-    if (IParameterChanges* out = data.outputParameterChanges)
-    {
-        int32 index = 0;
-
-        const double grDb = std::clamp(dsp_.gainReductionDb(), kGrMeterRange.min, kGrMeterRange.max);
-        if (IParamValueQueue* q = out->addParameterData(kGrMeter, index))
-        {
-            int32 pt = 0;
-            q->addPoint(0, toNorm(kGrMeterRange, grDb), pt);
-        }
-
-        const double lufs =
-            std::clamp(dsp_.shortTermLufs(), kLufsMeterRange.min, kLufsMeterRange.max);
-        if (IParamValueQueue* q = out->addParameterData(kLufsMeter, index))
-        {
-            int32 pt = 0;
-            q->addPoint(0, toNorm(kLufsMeterRange, lufs), pt);
         }
     }
 

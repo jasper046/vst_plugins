@@ -43,7 +43,7 @@ constexpr PRange kCeilingRange {-6.0, 0.0, -0.1};
 constexpr PRange kLookAheadRange {0.0, 20.0, 1.0};
 constexpr PRange kReleaseRange {50.0, 6000.0, 3000.0};
 constexpr PRange kStereoLinkRange {0.0, 100.0, 100.0};
-constexpr PRange kTargetLufsRange {-30.0, -5.0, -14.0};
+constexpr PRange kTargetLufsRange {-30.0, -5.0, -12.0};
 
 // Read-only meter ranges (used only for display scaling).
 constexpr PRange kGrMeterRange {-20.0, 0.0, 0.0};

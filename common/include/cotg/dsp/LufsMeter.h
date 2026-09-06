@@ -25,6 +25,7 @@ public:
         msBuf_.assign(len > 0 ? len : 1, 0.0);
         msPos_ = 0;
         msSum_ = 0.0;
+        filled_ = 0;
         lufs_ = kSilence;
     }
 
@@ -35,6 +36,7 @@ public:
         std::fill(msBuf_.begin(), msBuf_.end(), 0.0);
         msPos_ = 0;
         msSum_ = 0.0;
+        filled_ = 0;
         lufs_ = kSilence;
     }
 
@@ -51,7 +53,13 @@ public:
         if (++msPos_ >= static_cast<int>(msBuf_.size()))
             msPos_ = 0;
 
-        const double meanMs = msSum_ / static_cast<double>(msBuf_.size());
+        // Average over the samples accumulated so far (up to the full window)
+        // rather than the whole buffer, so the reading is correct as soon as
+        // input arrives instead of ramping up over the first window length.
+        if (filled_ < static_cast<int>(msBuf_.size()))
+            ++filled_;
+
+        const double meanMs = msSum_ / static_cast<double>(filled_);
         lufs_ = meanMs > 0.0 ? -0.691 + 10.0 * std::log10(meanMs) : kSilence;
     }
 
@@ -65,6 +73,7 @@ private:
     KWeighting kR_;
     std::vector<double> msBuf_;
     int msPos_ = 0;
+    int filled_ = 0;
     double msSum_ = 0.0;
     double lufs_ = kSilence;
 };

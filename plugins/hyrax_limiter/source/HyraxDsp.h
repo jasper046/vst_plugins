@@ -15,7 +15,7 @@ struct Params
     double releaseMs = 3000.0;   // slider4  50..6000
     double stereoLinkPct = 100.0;// slider5  0..100
     bool truePeak = true;        // slider6  Off/On
-    double targetLufs = -14.0;   // slider7  -30..-5
+    double targetLufs = -12.0;   // slider7  -30..-5
     bool senseOn = false;        // slider8  Off/On
 };
 

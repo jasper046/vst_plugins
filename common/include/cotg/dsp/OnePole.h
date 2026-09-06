@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "cotg/dsp/Constants.h"
+
 namespace cotg::dsp {
 
 // One-pole smoother matching the JSFX idiom  state = x + a*(state - x).
@@ -24,7 +26,7 @@ struct OnePole
     // First-order (Butterworth) low-pass pole: a = exp(-2*pi*fc/fs).
     static double coeffFromCutoff(double fc, double sampleRate)
     {
-        return std::exp(-2.0 * M_PI * fc / sampleRate);
+        return std::exp(-2.0 * kPi * fc / sampleRate);
     }
 
     // Smoothing over roughly `n` samples: a = exp(-k / n).

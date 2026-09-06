@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "cotg/dsp/Biquad.h"
+#include "cotg/dsp/Constants.h"
 
 namespace cotg::dsp {
 
@@ -23,7 +24,7 @@ struct KWeighting
         const double dbBoost = 3.999843853973347;
         const double fcShelf = 1681.974450955533;
         const double qShelf  = 0.7071752369554196;
-        const double K  = std::tan(M_PI * fcShelf / sampleRate);
+        const double K  = std::tan(kPi * fcShelf / sampleRate);
         const double Vh = std::pow(10.0, dbBoost / 20.0);
         const double Vb = std::pow(Vh, 0.4996667741545416);
         const double a0s = 1.0 + K / qShelf + K * K;
@@ -38,7 +39,7 @@ struct KWeighting
         // --- stage 2: high-pass (~38 Hz) ---
         const double fcHp = 38.13547087602444;
         const double qHp  = 0.5003270373238773;
-        const double w0 = 2.0 * M_PI * fcHp / sampleRate;
+        const double w0 = 2.0 * kPi * fcHp / sampleRate;
         const double cw = std::cos(w0);
         const double alpha = std::sin(w0) / (2.0 * qHp);
         const double a0h = 1.0 + alpha;

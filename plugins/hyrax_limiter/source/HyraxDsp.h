@@ -55,11 +55,17 @@ public:
     // Current BS.1770 short-term (3 s) LUFS of the output.
     double shortTermLufs() const { return lufs_.shortTerm(); }
 
-    // If the SENSE loop moved the threshold since the last call, returns true
-    // and writes the new threshold (dB) so the host parameter can be updated.
-    bool consumeSenseThreshold(double& newThresholdDb);
+    // SENSE offset currently applied to the threshold (dB, <= 0). The offset
+    // lives entirely inside the engine and is never written back to the host,
+    // so host parameter echo/re-send cannot reset the loop.
+    double senseOffsetDb() const { return senseOffsetDb_; }
+
+    // Effective threshold actually used = user threshold + SENSE offset (dB).
+    double effectiveThresholdDb() const;
 
 private:
+    void updateThreshold();
+
     double sampleRate_ = 48000.0;
 
     // --- look-ahead ring buffers (advanced in lockstep) ---
@@ -99,13 +105,16 @@ private:
     cotg::dsp::LufsMeter lufs_;
 
     // --- SENSE loop ---
+    // The user's Threshold parameter and the SENSE-applied offset are kept
+    // separate; the effective threshold is their (clamped) sum. Because the
+    // offset never leaves the engine, the host Threshold parameter is never
+    // written to and host parameter echo cannot reset the loop.
     bool senseOn_ = false;
     double targetLufs_ = -14.0;
-    double curThresholdDb_ = 0.0;
+    double userThresholdDb_ = 0.0;
+    double senseOffsetDb_ = 0.0;
     int senseUpdateEvery_ = 1;
     int senseUpdateCtr_ = 0;
-    bool senseChanged_ = false;
-    double senseNewThresholdDb_ = 0.0;
 
     static constexpr double kThresholdMinDb = -30.0;
     static constexpr double kThresholdMaxDb = 0.0;

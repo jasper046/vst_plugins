@@ -171,22 +171,11 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
         }
     }
 
-    // --- 3) publish SENSE threshold updates + meters ---
+    // --- 3) publish meters (SENSE runs entirely inside the engine, so no
+    // threshold write-back to the host is needed) ---
     if (IParameterChanges* out = data.outputParameterChanges)
     {
         int32 index = 0;
-
-        double newThresholdDb;
-        if (dsp_.consumeSenseThreshold(newThresholdDb))
-        {
-            const double n = toNorm(kThresholdRange, newThresholdDb);
-            norm_[kThreshold] = n;
-            if (IParamValueQueue* q = out->addParameterData(kThreshold, index))
-            {
-                int32 pt = 0;
-                q->addPoint(0, n, pt);
-            }
-        }
 
         const double grDb = std::clamp(dsp_.gainReductionDb(), kGrMeterRange.min, kGrMeterRange.max);
         if (IParamValueQueue* q = out->addParameterData(kGrMeter, index))

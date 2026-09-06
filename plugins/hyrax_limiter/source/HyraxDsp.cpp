@@ -51,15 +51,29 @@ void HyraxDsp::reset()
     lufs_.reset();
 
     senseUpdateCtr_ = 0;
-    senseChanged_ = false;
+    // Note: senseOffsetDb_ is intentionally NOT cleared here so the SENSE
+    // offset persists across transport restarts (matching the JSFX, which
+    // freezes its threshold rather than snapping back).
+}
+
+void HyraxDsp::updateThreshold()
+{
+    const double eff =
+        std::clamp(userThresholdDb_ + senseOffsetDb_, kThresholdMinDb, kThresholdMaxDb);
+    thresh_ = dbToLin(eff);
+    makeup_ = ceiling_ / thresh_;
+}
+
+double HyraxDsp::effectiveThresholdDb() const
+{
+    return std::clamp(userThresholdDb_ + senseOffsetDb_, kThresholdMinDb, kThresholdMaxDb);
 }
 
 void HyraxDsp::setParameters(const Params& p)
 {
-    curThresholdDb_ = p.thresholdDb;
-    thresh_ = dbToLin(p.thresholdDb);
+    userThresholdDb_ = p.thresholdDb;
     ceiling_ = dbToLin(p.ceilingDb);
-    makeup_ = ceiling_ / thresh_;
+    updateThreshold();
 
     // Look-ahead in samples, clamped to the allocated buffer.
     int look = static_cast<int>(std::floor(p.lookAheadMs * 0.001 * sampleRate_));
@@ -182,17 +196,18 @@ void HyraxDsp::processSample(double& left, double& right)
         {
             const double err = targetLufs_ - lufsSt;
             const double maxStep = kSenseRateDb * senseUpdateEvery_ / sampleRate_;
-            double step = err * kSenseGain;
-            step = std::clamp(step, -maxStep, maxStep);
-            // louder (err > 0) needs a LOWER threshold
-            double newDb = std::clamp(curThresholdDb_ - step, kThresholdMinDb, kThresholdMaxDb);
-            if (newDb != curThresholdDb_)
+            const double step = std::clamp(err * kSenseGain, -maxStep, maxStep);
+            // louder (err > 0) needs a LOWER threshold -> more negative offset
+            double newOffset = senseOffsetDb_ - step;
+            // clamp the effective threshold into range, folding the clamp back
+            // into the offset so it can't wind up past the limits
+            const double eff =
+                std::clamp(userThresholdDb_ + newOffset, kThresholdMinDb, kThresholdMaxDb);
+            newOffset = eff - userThresholdDb_;
+            if (newOffset != senseOffsetDb_)
             {
-                curThresholdDb_ = newDb;
-                thresh_ = dbToLin(newDb);
-                makeup_ = ceiling_ / thresh_;
-                senseChanged_ = true;
-                senseNewThresholdDb_ = newDb;
+                senseOffsetDb_ = newOffset;
+                updateThreshold();
             }
         }
     }
@@ -211,15 +226,6 @@ void HyraxDsp::processSample(double& left, double& right)
 double HyraxDsp::gainReductionDb() const
 {
     return grMeter_ > 0.0 ? 20.0 * std::log10(grMeter_) : -150.0;
-}
-
-bool HyraxDsp::consumeSenseThreshold(double& newThresholdDb)
-{
-    if (!senseChanged_)
-        return false;
-    senseChanged_ = false;
-    newThresholdDb = senseNewThresholdDb_;
-    return true;
 }
 
 } // namespace cotg::hyrax

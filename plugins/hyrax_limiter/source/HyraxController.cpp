@@ -3,7 +3,6 @@
 #include "HyraxParams.h"
 
 #include "base/source/fstreamer.h"
-#include "pluginterfaces/base/ustring.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 
 using namespace Steinberg;
@@ -12,10 +11,21 @@ using namespace Steinberg::Vst;
 namespace cotg::hyrax {
 
 namespace {
+// `precision` is the number of decimal digits shown (and accepted) in the
+// host's generic UI text field. `stepCount` > 0 makes the parameter discrete
+// (e.g. integer steps); 0 keeps it continuous.
 RangeParameter* makeRange(const TChar* title, ParamID tag, const TChar* units, const PRange& r,
-                          int32 flags)
+                          int32 flags, int32 precision, int32 stepCount = 0)
 {
-    return new RangeParameter(title, tag, units, r.min, r.max, r.def, 0, flags);
+    auto* p = new RangeParameter(title, tag, units, r.min, r.max, r.def, stepCount, flags);
+    p->setPrecision(precision);
+    return p;
+}
+
+// Number of unit (integer) steps spanning a range, e.g. 50..6000 ms -> 5950.
+int32 integerSteps(const PRange& r)
+{
+    return static_cast<int32>(r.max - r.min);
 }
 } // namespace
 
@@ -26,38 +36,32 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
         return result;
 
     parameters.addParameter(
-        makeRange(STR16("Threshold"), kThreshold, STR16("dB"), kThresholdRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Threshold"), kThreshold, STR16("dB"), kThresholdRange, ParameterInfo::kCanAutomate, 1));
     parameters.addParameter(
-        makeRange(STR16("Ceiling"), kCeiling, STR16("dB"), kCeilingRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Ceiling"), kCeiling, STR16("dB"), kCeilingRange, ParameterInfo::kCanAutomate, 1));
     parameters.addParameter(
-        makeRange(STR16("Look Ahead"), kLookAhead, STR16("ms"), kLookAheadRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Look Ahead"), kLookAhead, STR16("ms"), kLookAheadRange, ParameterInfo::kCanAutomate, 0, integerSteps(kLookAheadRange)));
     parameters.addParameter(
-        makeRange(STR16("Release"), kRelease, STR16("ms"), kReleaseRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Release"), kRelease, STR16("ms"), kReleaseRange, ParameterInfo::kCanAutomate, 0, integerSteps(kReleaseRange)));
     parameters.addParameter(
-        makeRange(STR16("Stereo Link"), kStereoLink, STR16("%"), kStereoLinkRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Stereo Link"), kStereoLink, STR16("%"), kStereoLinkRange, ParameterInfo::kCanAutomate, 0, integerSteps(kStereoLinkRange)));
 
-    auto* truePeak = new StringListParameter(STR16("True Peak"), kTruePeak);
-    truePeak->appendString(STR16("Off"));
-    truePeak->appendString(STR16("On"));
-    parameters.addParameter(truePeak);
+    // Toggles: stepCount 1 makes hosts render a checkbox/button rather than a
+    // slider. Defaults match the processor (True Peak on, SENSE off).
+    parameters.addParameter(STR16("True Peak"), nullptr, 1, kTruePeakDefaultNorm,
+                            ParameterInfo::kCanAutomate, kTruePeak);
 
     parameters.addParameter(
-        makeRange(STR16("Target LUFS"), kTargetLufs, STR16("LUFS"), kTargetLufsRange, ParameterInfo::kCanAutomate));
+        makeRange(STR16("Target LUFS"), kTargetLufs, STR16("LUFS"), kTargetLufsRange, ParameterInfo::kCanAutomate, 1));
 
-    auto* sense = new StringListParameter(STR16("SENSE"), kSense);
-    sense->appendString(STR16("Off"));
-    sense->appendString(STR16("On"));
-    parameters.addParameter(sense);
+    parameters.addParameter(STR16("SENSE"), nullptr, 1, kSenseDefaultNorm,
+                            ParameterInfo::kCanAutomate, kSense);
 
     // Read-only output meters (visible in the generic UI, driven by the processor).
     parameters.addParameter(
-        makeRange(STR16("Gain Reduction"), kGrMeter, STR16("dB"), kGrMeterRange, ParameterInfo::kIsReadOnly));
+        makeRange(STR16("Gain Reduction"), kGrMeter, STR16("dB"), kGrMeterRange, ParameterInfo::kIsReadOnly, 1));
     parameters.addParameter(
-        makeRange(STR16("Short-term LUFS"), kLufsMeter, STR16("LUFS"), kLufsMeterRange, ParameterInfo::kIsReadOnly));
-
-    // Defaults for the toggles (match the processor's defaults).
-    setParamNormalized(kTruePeak, kTruePeakDefaultNorm);
-    setParamNormalized(kSense, kSenseDefaultNorm);
+        makeRange(STR16("Short-term LUFS"), kLufsMeter, STR16("LUFS"), kLufsMeterRange, ParameterInfo::kIsReadOnly, 1));
 
     return kResultTrue;
 }

@@ -18,7 +18,7 @@ if(NOT EXISTS "${vst3sdk_SOURCE_DIR}/CMakeLists.txt")
 endif()
 
 project(cotg_vst_plugins
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "Code of the Geeks VST3 plugin family"
     LANGUAGES C CXX)
 
@@ -27,6 +27,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
+# On Windows, statically link the MSVC runtime (/MT) so the plugin has no
+# dependency on VCRUNTIME140*.dll / MSVCP140.dll. Otherwise a host silently
+# fails to load the plugin on any machine without the Visual C++ Redistributable
+# installed, and the DAW just doesn't list it (exactly the "not detected"
+# symptom). Two settings, both set BEFORE add_subdirectory(vst3sdk):
+#   * SMTG_USE_STATIC_CRT  - the SDK adds an explicit /MT to its own targets via
+#                            a directory-scoped add_compile_options (does NOT
+#                            reach our sibling plugin target).
+#   * CMAKE_MSVC_RUNTIME_LIBRARY - the CMP0091 abstraction; applies to ALL
+#                            targets including our plugin. Both point at /MT so
+#                            nothing mixes /MT with /MD.
+if(WIN32)
+    set(SMTG_USE_STATIC_CRT ON CACHE BOOL "use static CRuntime on Windows" FORCE)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        CACHE STRING "MSVC runtime library (static)" FORCE)
 endif()
 
 # We only build our own plugins here - skip the SDK's bundled examples/hosts.

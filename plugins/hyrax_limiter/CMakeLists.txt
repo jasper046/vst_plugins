@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 # Hyrax Limiter VST3 plugin. Declares its own project() so the SDK's
 # per-target helpers (projectversion.h generation, version strings) resolve
 # PROJECT_BINARY_DIR to this plugin's build directory.
-project(HyraxLimiter VERSION 0.1.0)
+project(HyraxLimiter VERSION 0.1.1)
 
 set(target HyraxLimiter)
 

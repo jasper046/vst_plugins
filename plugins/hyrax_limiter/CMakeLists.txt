@@ -26,6 +26,9 @@ target_compile_features(${target} PUBLIC cxx_std_17)
 
 target_include_directories(${target} PRIVATE source)
 
+# Ensure version files are properly included for Windows builds
+target_include_directories(${target} PRIVATE ${PROJECT_BINARY_DIR})
+
 target_link_libraries(${target}
     PRIVATE
         sdk

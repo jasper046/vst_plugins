@@ -64,6 +64,32 @@ jobs:
             mv "$bundle/Contents/x86_64-win" "$bundle/Contents/x86_64-win64"
           fi
 
+      # Self-sign the DLL so Windows/DAWs don't reject the freshly built
+      # plugin as unsigned. A self-signed cert isn't a trust anchor (won't
+      # quiet SmartScreen on Win11 Smart App Control), but many hosts require
+      # the plugin to carry *a* signature to instantiate.
+      - name: Sign Windows DLL
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          $bundle = (Get-ChildItem -Recurse -Filter "HyraxLimiter.vst3" -Directory).FullName
+          $dll = Join-Path $bundle "Contents\x86_64-win64\HyraxLimiter.dll"
+          if (-not (Test-Path $dll)) { "DLL not found at $dll"; exit 1 }
+
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | Select-Object -First 1
+          if (-not $signtool) { "signtool.exe not found"; exit 1 }
+
+          $password = ConvertTo-SecureString -String "ci-signing-password" -Force -AsPlainText
+          $cert = New-SelfSignedCertificate -Type CodeSigningCertificate `
+            -Subject "CN=Code of the Geeks, O=Code of the Geeks, C=US" `
+            -CertStoreLocation Cert:\CurrentUser\My `
+            -KeyExportPolicy Exportable `
+            -Extension @{ExtendedKeyUsage = "1.3.6.1.5.5.7.3.3"}
+          $pfx = Join-Path $env:TEMP "HyraxLimiter-signing.pfx"
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $password
+
+          & $signtool.FullName sign /fd SHA256 /tr http://timestamp.globalsign.com/scripts/timestamp.dll /td SHA256 /f $pfx /p $password $dll
+
       # The .vst3 bundle location differs slightly per generator; collect any
       # HyraxLimiter.vst3 produced under the build tree.
       - name: Collect artifact

@@ -22,6 +22,16 @@ project(cotg_vst_plugins
     DESCRIPTION "Code of the Geeks VST3 plugin family"
     LANGUAGES C CXX)
 
+# VSTGUI on macOS compiles Objective-C++ (.mm) sources, so the Objective-C/C++
+# languages must be enabled at the top level - before the SDK/VSTGUI
+# subdirectories are added - or CMake never generates the OBJCXX compile rule
+# (CMAKE_OBJCXX_COMPILE_OBJECT) and the Generate step fails. These languages
+# only exist on Apple platforms, so guard on APPLE.
+if(APPLE)
+    enable_language(OBJC)
+    enable_language(OBJCXX)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

@@ -1,39 +1,54 @@
 #pragma once
 
-#include "vstgui/lib/controls/ccontrol.h"
+#include "vstgui/lib/cview.h"
 #include "vstgui/lib/cvstguitimer.h"
+
+namespace Steinberg {
+namespace Vst {
+class EditController;
+}
+} // namespace Steinberg
 
 namespace cotg::hyrax {
 
-// Horizontal gain-reduction meter for the Hyrax editor. Bound (by control tag)
-// to the read-only "Gain Reduction" parameter the processor publishes: the
-// control value is the reduction normalized over kGainReductionMaxDb.
+// Stereo gain-reduction meter for the Hyrax editor. Two horizontal bars (L over
+// R), each anchored at 0 dB on the right and growing leftward with reduction, on
+// a fixed full scale (kGainReductionMeterDb). Each bar carries a thick "max
+// reduction" line: a peak detector that jumps instantly to the greatest
+// reduction, holds for ~1 s, then converges back toward the current reduction
+// via a one-pole (single-sided) decay.
 //
-// The bar is anchored at 0 dB on the right edge and grows leftward with
-// increasing reduction. The *visible* full scale auto-ranges: it snaps to the
-// smallest of a few discrete endpoints (clamped to 5..15 dB) that still
-// contains a slowly-decaying peak, so quiet material shows fine detail while
-// heavy limiting still fits. A timer drives the peak decay and periodic redraw.
-class HyraxMeterView : public VSTGUI::CControl
+// Rather than binding to a single control tag, the view polls both read-only
+// gain-reduction parameters from the controller on its timer, which also drives
+// the hold/decay and redraw.
+class HyraxMeterView : public VSTGUI::CView
 {
 public:
-    HyraxMeterView(const VSTGUI::CRect& size, int32_t tag);
+    HyraxMeterView(const VSTGUI::CRect& size, Steinberg::Vst::EditController* controller);
 
     void draw(VSTGUI::CDrawContext* context) override;
-    void setValue(float value) override;
-
     bool attached(VSTGUI::CView* parent) override;
     bool removed(VSTGUI::CView* parent) override;
 
-    CLASS_METHODS(HyraxMeterView, VSTGUI::CControl)
+    CLASS_METHODS(HyraxMeterView, VSTGUI::CView)
 
 private:
-    // Current reduction in positive dB, from the bound parameter value.
-    double currentDb() const;
+    // One bar's state: the current reduction and its held peak (dB, positive).
+    struct Channel
+    {
+        double currentDb = 0.0;
+        double peakDb = 0.0;
+        double holdRemainingMs = 0.0;
+    };
+
+    double readReductionDb(int paramId) const; // current reduction from the controller
+    void advance(Channel& ch, double currentDb) const; // hold + one-pole decay
+    void drawBar(VSTGUI::CDrawContext* context, const VSTGUI::CRect& bar, const Channel& ch) const;
     void onTimer();
 
-    double peakHoldDb_ = 0.0;  // decaying recent peak, drives the auto-range
-    double fullScaleDb_ = 5.0; // current visible full scale (5, 10 or 15 dB)
+    Steinberg::Vst::EditController* controller_ = nullptr;
+    Channel left_;
+    Channel right_;
     VSTGUI::SharedPointer<VSTGUI::CVSTGUITimer> timer_;
 };
 

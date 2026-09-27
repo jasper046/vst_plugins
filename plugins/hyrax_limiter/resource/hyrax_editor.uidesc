@@ -54,7 +54,7 @@
 
 		<!-- Gain reduction meter -->
 		<view class="CTextLabel" title="GAIN REDUCTION" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 220" size="200, 16"/>
-		<view class="CView" custom-view-name="HyraxGRMeter" control-tag="GainReduction" mouse-enabled="false" origin="12, 238" size="406, 50"/>
+		<view class="CView" custom-view-name="HyraxGRMeter" mouse-enabled="false" origin="12, 238" size="406, 50"/>
 
 	</template>
 	<custom>
@@ -68,6 +68,5 @@
 		<control-tag name="StereoLink" tag="4"/>
 		<control-tag name="TruePeak" tag="5"/>
 		<control-tag name="Bypass" tag="6"/>
-		<control-tag name="GainReduction" tag="7"/>
 	</control-tags>
 </vstgui-ui-description>

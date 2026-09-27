@@ -116,7 +116,8 @@ void HyraxProcessor::processChannels(SampleT** in, SampleT** out, int numChannel
         double l = static_cast<double>(inL[i]);
         double r = static_cast<double>(inR[i]);
         dsp_.processSample(l, r);
-        blockPeakGrDb_ = std::max(blockPeakGrDb_, dsp_.gainReductionDb());
+        blockPeakGrDbL_ = std::max(blockPeakGrDbL_, dsp_.gainReductionDbL());
+        blockPeakGrDbR_ = std::max(blockPeakGrDbR_, dsp_.gainReductionDbR());
         outL[i] = static_cast<SampleT>(l);
         if (numChannels > 1)
             outR[i] = static_cast<SampleT>(r);
@@ -172,7 +173,8 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
     }
 
     // --- 2) audio ---
-    blockPeakGrDb_ = 0.0;
+    blockPeakGrDbL_ = 0.0;
+    blockPeakGrDbR_ = 0.0;
     if (data.numSamples > 0 && data.numInputs > 0 && data.numOutputs > 0)
     {
         const int numChannels = std::min(data.inputs[0].numChannels, data.outputs[0].numChannels);
@@ -202,18 +204,20 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
         }
     }
 
-    // --- 3) publish the gain-reduction meter (0 while bypassed) ---
+    // --- 3) publish the per-channel gain-reduction meters (0 while bypassed) ---
     if (data.outputParameterChanges)
     {
-        int32 index = 0;
-        if (IParamValueQueue* q =
-                data.outputParameterChanges->addParameterData(kGainReduction, index))
-        {
-            const double gr = bypassed_ ? 0.0 : blockPeakGrDb_;
-            const double norm = std::clamp(gr / kGainReductionMaxDb, 0.0, 1.0);
-            int32 pointIndex = 0;
-            q->addPoint(0, norm, pointIndex);
-        }
+        const auto publish = [&](ParamID id, double grDb) {
+            int32 index = 0;
+            if (IParamValueQueue* q = data.outputParameterChanges->addParameterData(id, index))
+            {
+                const double norm = std::clamp(grDb / kGainReductionMaxDb, 0.0, 1.0);
+                int32 pointIndex = 0;
+                q->addPoint(0, norm, pointIndex);
+            }
+        };
+        publish(kGainReductionL, bypassed_ ? 0.0 : blockPeakGrDbL_);
+        publish(kGainReductionR, bypassed_ ? 0.0 : blockPeakGrDbR_);
     }
 
     return kResultTrue;

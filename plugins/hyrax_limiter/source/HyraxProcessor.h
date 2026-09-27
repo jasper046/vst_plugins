@@ -49,9 +49,10 @@ private:
     bool paramsDirty_ = true;
     bool bypassed_ = false;
 
-    // Peak gain reduction (positive dB) over the block currently being
-    // processed; published to the editor via output parameter changes.
-    double blockPeakGrDb_ = 0.0;
+    // Per-channel peak gain reduction (positive dB) over the block currently
+    // being processed; published to the editor via output parameter changes.
+    double blockPeakGrDbL_ = 0.0;
+    double blockPeakGrDbR_ = 0.0;
 };
 
 } // namespace cotg::hyrax

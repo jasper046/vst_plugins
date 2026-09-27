@@ -35,7 +35,8 @@ void HyraxDsp::reset()
     relLp1_ = 0.0;
     relLp2_ = 0.0;
     holdCtr_ = 0;
-    grDb_ = 0.0;
+    grDbL_ = 0.0;
+    grDbR_ = 0.0;
 
     osL1_ = 0.0;
     osR1_ = 0.0;
@@ -146,11 +147,10 @@ void HyraxDsp::processSample(double& left, double& right)
     const double gl = 1.0 - (link_ * dFinal + (1.0 - link_) * dlOwn);
     const double gr = 1.0 - (link_ * dFinal + (1.0 - link_) * drOwn);
 
-    // Metering: gain reduction = the larger attenuation of the two channels,
-    // expressed in positive dB (makeup is a separate constant gain and is not
-    // counted). gl/gr are limiting gains in (0, 1].
-    const double minGain = std::min(gl, gr);
-    grDb_ = minGain < 1.0 && minGain > 0.0 ? -20.0 * std::log10(minGain) : 0.0;
+    // Metering: per-channel gain reduction in positive dB (makeup is a separate
+    // constant gain and is not counted). gl/gr are limiting gains in (0, 1].
+    grDbL_ = gl < 1.0 && gl > 0.0 ? -20.0 * std::log10(gl) : 0.0;
+    grDbR_ = gr < 1.0 && gr > 0.0 ? -20.0 * std::log10(gr) : 0.0;
 
     // --- read delayed audio and apply gain + makeup ---
     double outL = left_.back(lookSamples_) * gl * makeup_;

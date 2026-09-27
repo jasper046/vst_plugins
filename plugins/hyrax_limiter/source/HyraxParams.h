@@ -22,17 +22,21 @@ enum ParamId : Steinberg::Vst::ParamID
     // non-persisted params after it, never before.
     kNumAutomatable,
 
-    // Read-only meter: gain reduction in dB, published by the processor to the
-    // editor's meter. Not automatable and not saved in state.
-    kGainReduction = kNumAutomatable,
+    // Read-only meters: per-channel gain reduction in dB, published by the
+    // processor to the editor's meter. Not automatable and not saved in state.
+    kGainReductionL = kNumAutomatable,
+    kGainReductionR,
 
     kNumParams
 };
 
-// Fixed full-scale (dB) used to normalize the gain-reduction meter parameter.
-// The editor's meter auto-ranges its *visible* scale within a smaller window;
-// this is just the transport range so any realistic reduction fits in 0..1.
+// Transport full-scale (dB) used to normalize the gain-reduction meter
+// parameters, so any realistic reduction fits in 0..1. The editor draws them on
+// a smaller fixed visible scale (see kGainReductionMeterDb).
 constexpr double kGainReductionMaxDb = 24.0;
+
+// Fixed visible full scale (dB) of the editor's gain-reduction meter.
+constexpr double kGainReductionMeterDb = 12.0;
 
 // Plain-value range for a linear parameter, matching the RangeParameter the
 // controller registers. Shared so the processor's normalized<->plain mapping

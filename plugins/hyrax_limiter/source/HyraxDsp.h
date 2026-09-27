@@ -49,11 +49,11 @@ public:
         return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples;
     }
 
-    // Gain reduction applied to the most recently processed sample, in positive
-    // dB (0 = no reduction). Reflects the limiter envelope (the larger reduction
-    // of the two channels); the always-on safety clipper is not included. Drives
-    // the editor's gain-reduction meter.
-    double gainReductionDb() const { return grDb_; }
+    // Per-channel gain reduction applied to the most recently processed sample,
+    // in positive dB (0 = no reduction). Reflects the limiter envelope; the
+    // always-on safety clipper is not included. Drives the editor's L/R meters.
+    double gainReductionDbL() const { return grDbL_; }
+    double gainReductionDbR() const { return grDbR_; }
 
 private:
     double sampleRate_ = 48000.0;
@@ -83,8 +83,9 @@ private:
     double relLp2_ = 0.0;
     int holdCtr_ = 0;
 
-    // --- metering: gain reduction of the last processed sample, positive dB ---
-    double grDb_ = 0.0;
+    // --- metering: per-channel gain reduction of the last sample, positive dB ---
+    double grDbL_ = 0.0;
+    double grDbR_ = 0.0;
 
     // --- true-peak interpolation history ---
     double osL1_ = 0.0;

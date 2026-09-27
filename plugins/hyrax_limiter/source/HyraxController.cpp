@@ -103,10 +103,13 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
         parameters.addParameter(info);
     }
 
-    // Read-only gain-reduction meter (positive dB). The processor publishes the
-    // per-block peak here; the editor's custom meter view is bound to this tag.
+    // Read-only per-channel gain-reduction meters (positive dB). The processor
+    // publishes the per-block peak here; the editor's meter view polls both.
     parameters.addParameter(
-        makeRange(STR16("Gain Reduction"), kGainReduction, STR16("dB"),
+        makeRange(STR16("Gain Reduction L"), kGainReductionL, STR16("dB"),
+                  PRange {0.0, kGainReductionMaxDb, 0.0}, ParameterInfo::kIsReadOnly, 1));
+    parameters.addParameter(
+        makeRange(STR16("Gain Reduction R"), kGainReductionR, STR16("dB"),
                   PRange {0.0, kGainReductionMaxDb, 0.0}, ParameterInfo::kIsReadOnly, 1));
 
     return kResultTrue;
@@ -130,17 +133,15 @@ CView* HyraxController::createCustomView(UTF8StringPtr name, const UIAttributes&
     attributes.getPointAttribute("size", size);
     const CRect rect(origin, size);
 
-    // Custom views are built with a null listener and (for the meter) no tag
-    // applied by the "CView" base attributes, so we wire the control tag and the
-    // editor as listener here. verifyView() then binds the control to its
-    // parameter (it requires listener == editor and a valid tag).
+    // The meter polls the two read-only GR parameters from the controller
+    // directly, so it needs no tag/listener binding.
     if (std::strcmp(name, "HyraxGRMeter") == 0)
-    {
-        auto* view = new HyraxMeterView(rect, kGainReduction);
-        view->setListener(editor);
-        return view;
-    }
+        return new HyraxMeterView(rect, this);
 
+    // Sliders are built with a null listener and no tag applied by the "CView"
+    // base attributes, so we wire the control tag and the editor as listener
+    // here. verifyView() then binds the control to its parameter (it requires
+    // listener == editor and a valid tag).
     if (std::strcmp(name, "HyraxSlider") == 0)
     {
         int32_t tag = -1;

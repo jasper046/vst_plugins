@@ -137,7 +137,14 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
                 continue;
             if (id == kBypass)
             {
-                bypassed_ = value >= 0.5;
+                const int32 bp = q->getPointCount();
+                if (bp > 0)
+                {
+                    ParamValue bv;
+                    int32 bso;
+                    if (q->getPoint(bp - 1, bso, bv) == kResultTrue)
+                        bypassed_ = bv >= 0.5;
+                }
                 continue;
             }
             const int32 numPoints = q->getPointCount();

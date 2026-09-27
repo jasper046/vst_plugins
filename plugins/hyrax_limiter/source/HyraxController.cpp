@@ -3,6 +3,7 @@
 #include "HyraxParams.h"
 
 #include "base/source/fstreamer.h"
+#include "pluginterfaces/base/ustring.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 #include "public.sdk/source/vst/vstparameters.h"
 

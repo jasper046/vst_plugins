@@ -87,7 +87,7 @@ jobs:
           if (-not $signtool) { "signtool.exe not found"; exit 1 }
 
           $password = ConvertTo-SecureString -String "ci-signing-password" -Force -AsPlainText
-          $cert = New-SelfSignedCertificate -Type CodeSigningCertificate `
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert `
             -Subject "CN=Code of the Geeks, O=Code of the Geeks, C=US" `
             -CertStoreLocation Cert:\CurrentUser\My `
             -KeyExportPolicy Exportable

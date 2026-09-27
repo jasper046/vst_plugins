@@ -1,14 +1,20 @@
 #include "HyraxController.h"
 
+#include "HyraxMeterView.h"
 #include "HyraxParams.h"
+#include "HyraxSlider.h"
 
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/base/ustring.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
 #include "public.sdk/source/vst/vstparameters.h"
+#include "vstgui/uidescription/uiattributes.h"
+
+#include <cstring>
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
+using namespace VSTGUI;
 
 namespace cotg::hyrax {
 
@@ -97,7 +103,55 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
         parameters.addParameter(info);
     }
 
+    // Read-only gain-reduction meter (positive dB). The processor publishes the
+    // per-block peak here; the editor's custom meter view is bound to this tag.
+    parameters.addParameter(
+        makeRange(STR16("Gain Reduction"), kGainReduction, STR16("dB"),
+                  PRange {0.0, kGainReductionMaxDb, 0.0}, ParameterInfo::kIsReadOnly, 1));
+
     return kResultTrue;
+}
+
+IPlugView* PLUGIN_API HyraxController::createView(FIDString name)
+{
+    if (name && std::strcmp(name, ViewType::kEditor) == 0)
+        return new VST3Editor(this, "view", "hyrax_editor.uidesc");
+    return nullptr;
+}
+
+CView* HyraxController::createCustomView(UTF8StringPtr name, const UIAttributes& attributes,
+                                         const IUIDescription* description, VST3Editor* editor)
+{
+    if (!name)
+        return nullptr;
+
+    CPoint origin, size;
+    attributes.getPointAttribute("origin", origin);
+    attributes.getPointAttribute("size", size);
+    const CRect rect(origin, size);
+
+    // Custom views are built with a null listener and (for the meter) no tag
+    // applied by the "CView" base attributes, so we wire the control tag and the
+    // editor as listener here. verifyView() then binds the control to its
+    // parameter (it requires listener == editor and a valid tag).
+    if (std::strcmp(name, "HyraxGRMeter") == 0)
+    {
+        auto* view = new HyraxMeterView(rect, kGainReduction);
+        view->setListener(editor);
+        return view;
+    }
+
+    if (std::strcmp(name, "HyraxSlider") == 0)
+    {
+        int32_t tag = -1;
+        if (const std::string* tagName = attributes.getAttributeValue("control-tag"))
+            tag = description->getTagForName(tagName->c_str());
+        auto* view = new HyraxSlider(rect, tag);
+        view->setListener(editor);
+        return view;
+    }
+
+    return nullptr;
 }
 
 tresult PLUGIN_API HyraxController::setComponentState(IBStream* state)

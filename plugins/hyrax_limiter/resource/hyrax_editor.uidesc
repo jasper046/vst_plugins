@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vstgui-ui-description version="1">
+	<fonts/>
+	<colors>
+		<color name="PanelBack" rgba="#1e1e20ff"/>
+		<color name="SliderBack" rgba="#2a2a2eff"/>
+		<color name="SliderValue" rgba="#5ac878ff"/>
+		<color name="SliderFrame" rgba="#46464aff"/>
+		<color name="EditBack" rgba="#101012ff"/>
+		<color name="EditFrame" rgba="#46464aff"/>
+		<color name="TextColor" rgba="#c8c8ccff"/>
+		<color name="TitleColor" rgba="#ffffffff"/>
+		<color name="Accent" rgba="#5ac878ff"/>
+	</colors>
+	<template background-color="PanelBack" background-color-draw-style="filled" class="CViewContainer" minSize="430, 300" maxSize="430, 300" name="view" origin="0, 0" size="430, 300">
+
+		<!-- Title + bypass -->
+		<view class="CTextLabel" title="Hyrax Limiter" font="~ NormalFontVeryBig" font-color="TitleColor" text-alignment="left" transparent="true" origin="12, 10" size="260, 26"/>
+		<view class="CCheckBox" control-tag="Bypass" title="Bypass" font="~ NormalFontSmall" font-color="TextColor" boxframe-color="SliderFrame" boxfill-color="EditBack" checkmark-color="Accent" origin="330, 13" size="90, 20"/>
+
+		<!-- Threshold -->
+		<view class="CTextLabel" title="Threshold" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 46" size="90, 20"/>
+		<view class="CView" custom-view-name="HyraxSlider" control-tag="Threshold" mouse-enabled="true" origin="104, 47" size="196, 18"/>
+		<view class="CTextEdit" control-tag="Threshold" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="308, 47" size="66, 18"/>
+		<view class="CTextLabel" title="dB" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="380, 47" size="40, 18"/>
+
+		<!-- Ceiling -->
+		<view class="CTextLabel" title="Ceiling" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 74" size="90, 20"/>
+		<view class="CView" custom-view-name="HyraxSlider" control-tag="Ceiling" mouse-enabled="true" origin="104, 75" size="196, 18"/>
+		<view class="CTextEdit" control-tag="Ceiling" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="308, 75" size="66, 18"/>
+		<view class="CTextLabel" title="dB" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="380, 75" size="40, 18"/>
+
+		<!-- Look Ahead -->
+		<view class="CTextLabel" title="Look Ahead" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 102" size="90, 20"/>
+		<view class="CView" custom-view-name="HyraxSlider" control-tag="LookAhead" mouse-enabled="true" origin="104, 103" size="196, 18"/>
+		<view class="CTextEdit" control-tag="LookAhead" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="308, 103" size="66, 18"/>
+		<view class="CTextLabel" title="ms" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="380, 103" size="40, 18"/>
+
+		<!-- Release -->
+		<view class="CTextLabel" title="Release" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 130" size="90, 20"/>
+		<view class="CView" custom-view-name="HyraxSlider" control-tag="Release" mouse-enabled="true" origin="104, 131" size="196, 18"/>
+		<view class="CTextEdit" control-tag="Release" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="308, 131" size="66, 18"/>
+		<view class="CTextLabel" title="ms" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="380, 131" size="40, 18"/>
+
+		<!-- Stereo Link -->
+		<view class="CTextLabel" title="Stereo Link" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 158" size="90, 20"/>
+		<view class="CView" custom-view-name="HyraxSlider" control-tag="StereoLink" mouse-enabled="true" origin="104, 159" size="196, 18"/>
+		<view class="CTextEdit" control-tag="StereoLink" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="308, 159" size="66, 18"/>
+		<view class="CTextLabel" title="%" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="380, 159" size="40, 18"/>
+
+		<!-- True Peak -->
+		<view class="CTextLabel" title="True Peak" font="~ NormalFont" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 188" size="90, 20"/>
+		<view class="CCheckBox" control-tag="TruePeak" title="" font="~ NormalFontSmall" font-color="TextColor" boxframe-color="SliderFrame" boxfill-color="EditBack" checkmark-color="Accent" origin="104, 188" size="20, 20"/>
+
+		<!-- Gain reduction meter -->
+		<view class="CTextLabel" title="GAIN REDUCTION" font="~ NormalFontSmall" font-color="TextColor" text-alignment="left" transparent="true" origin="12, 220" size="200, 16"/>
+		<view class="CView" custom-view-name="HyraxGRMeter" control-tag="GainReduction" mouse-enabled="false" origin="12, 238" size="406, 50"/>
+
+	</template>
+	<custom>
+		<attributes name="UIDescFilePath" path="hyrax_editor.uidesc"/>
+	</custom>
+	<control-tags>
+		<control-tag name="Threshold" tag="0"/>
+		<control-tag name="Ceiling" tag="1"/>
+		<control-tag name="LookAhead" tag="2"/>
+		<control-tag name="Release" tag="3"/>
+		<control-tag name="StereoLink" tag="4"/>
+		<control-tag name="TruePeak" tag="5"/>
+		<control-tag name="Bypass" tag="6"/>
+		<control-tag name="GainReduction" tag="7"/>
+	</control-tags>
+</vstgui-ui-description>

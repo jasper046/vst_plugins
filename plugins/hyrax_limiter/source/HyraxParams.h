@@ -17,9 +17,22 @@ enum ParamId : Steinberg::Vst::ParamID
     kTruePeak,
     kBypass,
 
+    // Count of parameters persisted in processor state. Everything below this
+    // line is NOT serialized (see getState/setState), so it must stay put — add
+    // non-persisted params after it, never before.
     kNumAutomatable,
-    kNumParams = kNumAutomatable
+
+    // Read-only meter: gain reduction in dB, published by the processor to the
+    // editor's meter. Not automatable and not saved in state.
+    kGainReduction = kNumAutomatable,
+
+    kNumParams
 };
+
+// Fixed full-scale (dB) used to normalize the gain-reduction meter parameter.
+// The editor's meter auto-ranges its *visible* scale within a smaller window;
+// this is just the transport range so any realistic reduction fits in 0..1.
+constexpr double kGainReductionMaxDb = 24.0;
 
 // Plain-value range for a linear parameter, matching the RangeParameter the
 // controller registers. Shared so the processor's normalized<->plain mapping

@@ -48,6 +48,10 @@ private:
     double norm_[kNumAutomatable];
     bool paramsDirty_ = true;
     bool bypassed_ = false;
+
+    // Peak gain reduction (positive dB) over the block currently being
+    // processed; published to the editor via output parameter changes.
+    double blockPeakGrDb_ = 0.0;
 };
 
 } // namespace cotg::hyrax

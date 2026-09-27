@@ -16,6 +16,10 @@ set(hyrax_sources
     source/HyraxProcessor.cpp
     source/HyraxController.h
     source/HyraxController.cpp
+    source/HyraxMeterView.h
+    source/HyraxMeterView.cpp
+    source/HyraxSlider.h
+    source/HyraxSlider.cpp
     source/HyraxEntry.cpp
     source/version.h
 )
@@ -29,10 +33,20 @@ target_include_directories(${target} PRIVATE source)
 # Ensure version files are properly included for Windows builds
 target_include_directories(${target} PRIVATE ${PROJECT_BINARY_DIR})
 
+# vstgui_support provides the VSTGUI editor (VST3Editor, controls, the custom
+# meter view). Enabled via SMTG_ENABLE_VSTGUI_SUPPORT in the root CMakeLists.
 target_link_libraries(${target}
     PRIVATE
         sdk
+        vstgui_support
         cotg::dsp
+)
+
+# Bundle the editor description into the plugin's Resources folder so the
+# VST3Editor can load it by name at runtime.
+smtg_target_add_plugin_resources(${target}
+    RESOURCES
+        resource/hyrax_editor.uidesc
 )
 
 smtg_target_configure_version_file(${target})

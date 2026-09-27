@@ -47,12 +47,14 @@ if(WIN32)
 endif()
 
 # We only build our own plugins here - skip the SDK's bundled examples/hosts.
-# The generic (host-provided) UI is used for the first releases, so VSTGUI is
-# not needed yet; leaving it off keeps the Linux build's system dependencies to
-# a minimum. Flip SMTG_ENABLE_VSTGUI_SUPPORT to 1 when adding a custom editor.
+# VSTGUI is enabled: the Hyrax limiter ships a custom editor (sliders with
+# numeric edit boxes plus a gain-reduction meter). The Linux CI runner already
+# installs the required X11/xcb/cairo/freetype/fontconfig packages (see
+# .github/workflows/build.yml). Plugins without a custom editor simply don't
+# implement createView and keep using the host's generic UI.
 set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES 0)
 set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES 0)
-set(SMTG_ENABLE_VSTGUI_SUPPORT 0)
+set(SMTG_ENABLE_VSTGUI_SUPPORT 1)
 set(SMTG_VSTGUI_ROOT "${vst3sdk_SOURCE_DIR}")
 
 # --- Steinberg VST3 SDK ----------------------------------------------------

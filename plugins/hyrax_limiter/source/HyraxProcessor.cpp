@@ -116,6 +116,7 @@ void HyraxProcessor::processChannels(SampleT** in, SampleT** out, int numChannel
         double l = static_cast<double>(inL[i]);
         double r = static_cast<double>(inR[i]);
         dsp_.processSample(l, r);
+        blockPeakGrDb_ = std::max(blockPeakGrDb_, dsp_.gainReductionDb());
         outL[i] = static_cast<SampleT>(l);
         if (numChannels > 1)
             outR[i] = static_cast<SampleT>(r);
@@ -171,6 +172,7 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
     }
 
     // --- 2) audio ---
+    blockPeakGrDb_ = 0.0;
     if (data.numSamples > 0 && data.numInputs > 0 && data.numOutputs > 0)
     {
         const int numChannels = std::min(data.inputs[0].numChannels, data.outputs[0].numChannels);
@@ -197,6 +199,20 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
             else
                 processChannels(data.inputs[0].channelBuffers64, data.outputs[0].channelBuffers64,
                                 numChannels, data.numSamples);
+        }
+    }
+
+    // --- 3) publish the gain-reduction meter (0 while bypassed) ---
+    if (data.outputParameterChanges)
+    {
+        int32 index = 0;
+        if (IParamValueQueue* q =
+                data.outputParameterChanges->addParameterData(kGainReduction, index))
+        {
+            const double gr = bypassed_ ? 0.0 : blockPeakGrDb_;
+            const double norm = std::clamp(gr / kGainReductionMaxDb, 0.0, 1.0);
+            int32 pointIndex = 0;
+            q->addPoint(0, norm, pointIndex);
         }
     }
 

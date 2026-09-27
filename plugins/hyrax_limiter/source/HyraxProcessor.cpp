@@ -28,6 +28,7 @@ void HyraxProcessor::initDefaults()
     norm_[kRelease] = toNorm(kReleaseRange, kReleaseRange.def);
     norm_[kStereoLink] = toNorm(kStereoLinkRange, kStereoLinkRange.def);
     norm_[kTruePeak] = kTruePeakDefaultNorm;
+    norm_[kBypass] = 0.0; // bypass off by default
 }
 
 void HyraxProcessor::applyParametersToEngine()
@@ -143,7 +144,10 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
                     ParamValue bv;
                     int32 bso;
                     if (q->getPoint(bp - 1, bso, bv) == kResultTrue)
+                    {
+                        norm_[kBypass] = bv;
                         bypassed_ = bv >= 0.5;
+                    }
                 }
                 continue;
             }

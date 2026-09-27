@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -134,6 +135,11 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
             const ParamID id = q->getParameterId();
             if (id >= kNumAutomatable)
                 continue;
+            if (id == kBypass)
+            {
+                bypassed_ = value >= 0.5;
+                continue;
+            }
             const int32 numPoints = q->getPointCount();
             if (numPoints <= 0)
                 continue;
@@ -159,7 +165,22 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
         const int numChannels = std::min(data.inputs[0].numChannels, data.outputs[0].numChannels);
         if (numChannels > 0)
         {
-            if (data.symbolicSampleSize == kSample32)
+            if (bypassed_)
+            {
+                // Bypass: copy input straight to output for each channel.
+                for (int ch = 0; ch < numChannels; ++ch)
+                {
+                    if (data.symbolicSampleSize == kSample32)
+                        memcpy(data.outputs[0].channelBuffers32[ch],
+                               data.inputs[0].channelBuffers32[ch],
+                               data.numSamples * sizeof(float));
+                    else
+                        memcpy(data.outputs[0].channelBuffers64[ch],
+                               data.inputs[0].channelBuffers64[ch],
+                               data.numSamples * sizeof(double));
+                }
+            }
+            else if (data.symbolicSampleSize == kSample32)
                 processChannels(data.inputs[0].channelBuffers32, data.outputs[0].channelBuffers32,
                                 numChannels, data.numSamples);
             else

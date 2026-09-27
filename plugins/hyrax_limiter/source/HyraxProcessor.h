@@ -47,6 +47,7 @@ private:
     double sampleRate_ = 48000.0;
     double norm_[kNumAutomatable];
     bool paramsDirty_ = true;
+    bool bypassed_ = false;
 };
 
 } // namespace cotg::hyrax

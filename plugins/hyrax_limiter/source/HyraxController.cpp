@@ -4,6 +4,7 @@
 
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
+#include "public.sdk/source/vst/vstparameters.h"
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -27,6 +28,36 @@ int32 integerSteps(const PRange& r)
 {
     return static_cast<int32>(r.max - r.min);
 }
+
+// Toggle parameter that correctly round-trips "Off"↔0.0 and "On"↔1.0.
+class ToggleParameter : public StringListParameter
+{
+public:
+    ToggleParameter(const TChar* title, ParamID tag, ParamValue defaultNorm,
+                    int32 flags = ParameterInfo::kCanAutomate,
+                    const TChar* units = nullptr)
+        : StringListParameter(title, tag, units, flags)
+    {
+        appendString(STR16("Off"));
+        appendString(STR16("On"));
+        setNormalized(defaultNorm);
+    }
+
+    // Override toNormalized so that plain values 0/1 map to 0.0/1.0 instead
+    // of the default StringListParameter mapping (which divides by stepCount).
+    ParamValue toNormalized(ParamValue plainValue) const override
+    {
+        return plainValue <= 0.0 ? 0.0 : 1.0;
+    }
+
+    ParamValue toPlain(ParamValue _valueNormalized) const override
+    {
+        return _valueNormalized >= 0.5 ? 1.0 : 0.0;
+    }
+
+    OBJ_METHODS(ToggleParameter, StringListParameter)
+};
+
 } // namespace
 
 tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
@@ -46,10 +77,24 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
     parameters.addParameter(
         makeRange(STR16("Stereo Link"), kStereoLink, STR16("%"), kStereoLinkRange, ParameterInfo::kCanAutomate, 0, integerSteps(kStereoLinkRange)));
 
-    // Toggle: stepCount 1 makes hosts render a checkbox/button rather than a
-    // slider. Default matches the processor (True Peak on).
-    parameters.addParameter(STR16("True Peak"), nullptr, 1, kTruePeakDefaultNorm,
-                            ParameterInfo::kCanAutomate, kTruePeak);
+    // Toggle: "Off"→0.0, "On"→1.0 — round-trips correctly for the validator's
+    // getParamValueByString test.
+    parameters.addParameter(
+        new ToggleParameter(STR16("True Peak"), kTruePeak, kTruePeakDefaultNorm));
+
+    // Bypass parameter — hosts use this for gapless bypass with latency
+    // compensation. Build a ParameterInfo and use addParameter(info) so the
+    // kIsBypass flag is set before the Parameter object is created.
+    {
+        ParameterInfo info {};
+        info.id = kBypass;
+        Steinberg::UString(info.title, str16BufferSize(String128)).assign(STR16("Bypass"));
+        info.flags = ParameterInfo::kCanAutomate | ParameterInfo::kIsBypass;
+        info.stepCount = 1; // toggle (0=Off, 1=On)
+        info.defaultNormalizedValue = 0.0;
+        info.unitId = kRootUnitId;
+        parameters.addParameter(info);
+    }
 
     return kResultTrue;
 }

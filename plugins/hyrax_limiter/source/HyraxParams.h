@@ -15,6 +15,7 @@ enum ParamId : Steinberg::Vst::ParamID
     kRelease,
     kStereoLink,
     kTruePeak,
+    kBypass,
 
     kNumAutomatable,
     kNumParams = kNumAutomatable

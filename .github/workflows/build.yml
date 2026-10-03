@@ -49,16 +49,15 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      # Work around vst3sdk naming bugs on Windows:
-      # - DLL is output as .vst3 instead of .dll
+      # Work around a vst3sdk naming bug on Windows:
       # - Architecture folder is x86_64-win instead of x86_64-win64
+      # Note: the binary keeps its .vst3 extension — hosts (e.g. FL Studio)
+      # expect .vst3, not .dll, inside the bundle.
       - name: Fix Windows bundle naming
         if: matrix.name == 'windows'
         shell: bash
         run: |
           bundle=$(find build -name "HyraxLimiter.vst3" -type d -print -quit)
-          # Rename .vst3 files inside the bundle to .dll
-          find "$bundle/Contents" -name "*.vst3" -type f -exec sh -c 'mv "$1" "${1%.vst3}.dll"' _ {} \;
           # Rename architecture subdirectory to VST3 spec name
           if [ -d "$bundle/Contents/x86_64-win" ]; then
             mv "$bundle/Contents/x86_64-win" "$bundle/Contents/x86_64-win64"

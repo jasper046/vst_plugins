@@ -12,7 +12,7 @@ header-only library so each plugin reuses the same primitives.
 
 | Plugin | Status | Source JSFX |
 |--------|--------|-------------|
-| **Hyrax Limiter** | ✅ 1.0.0 (full parity) | `hyrax_limiter.jsfx` |
+| **Hyrax Limiter** | ✅ 1.0.1 (full parity) | `hyrax_limiter.jsfx` |
 
 The Hyrax Limiter is a real-time causal port of the Matchering ("Hyrax")
 mastering limiter: look-ahead peak limiting with a multi-stage release and

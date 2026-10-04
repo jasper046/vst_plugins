@@ -47,6 +47,7 @@ target_link_libraries(${target}
 smtg_target_add_plugin_resources(${target}
     RESOURCES
         resource/hyrax_editor.uidesc
+        resource/GainReductionMeter.png
 )
 
 smtg_target_configure_version_file(${target})

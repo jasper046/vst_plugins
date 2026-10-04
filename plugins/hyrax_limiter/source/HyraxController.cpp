@@ -133,10 +133,19 @@ CView* HyraxController::createCustomView(UTF8StringPtr name, const UIAttributes&
     attributes.getPointAttribute("size", size);
     const CRect rect(origin, size);
 
-    // The meter polls the two read-only GR parameters from the controller
-    // directly, so it needs no tag/listener binding.
+    // One analog meter per channel. Which channel comes from the "channel"
+    // attribute in the .uidesc ("L"/"R"); the view polls the matching read-only
+    // GR parameter directly, so it needs no tag/listener binding. The filmstrip
+    // bitmap is resolved from the UIDescription's <bitmaps> section by name.
     if (std::strcmp(name, "HyraxGRMeter") == 0)
-        return new HyraxMeterView(rect, this);
+    {
+        int paramId = kGainReductionL;
+        if (const std::string* ch = attributes.getAttributeValue("channel"))
+            if (*ch == "R")
+                paramId = kGainReductionR;
+        CBitmap* filmstrip = description->getBitmap("GainReductionMeter");
+        return new HyraxMeterView(rect, this, filmstrip, paramId);
+    }
 
     // Sliders are built with a null listener and no tag applied by the "CView"
     // base attributes, so we wire the control tag and the editor as listener

@@ -16,6 +16,8 @@ set(hyrax_sources
     source/HyraxProcessor.cpp
     source/HyraxController.h
     source/HyraxController.cpp
+    source/HyraxKnob.h
+    source/HyraxKnob.cpp
     source/HyraxMeterView.h
     source/HyraxMeterView.cpp
     source/HyraxEntry.cpp

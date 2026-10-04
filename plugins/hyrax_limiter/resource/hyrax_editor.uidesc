@@ -22,13 +22,13 @@
 		<view class="CView" custom-view-name="HyraxGRMeter" channel="R" mouse-enabled="false" origin="520, 38" size="128, 94"/>
 
 		<!-- Big knobs: Threshold, Ceiling -->
-		<view class="CAnimKnob" control-tag="Threshold" bitmap="KnobBig" origin="102, 50" size="110, 110"/>
-		<view class="CAnimKnob" control-tag="Ceiling" bitmap="KnobBig" origin="103, 219" size="110, 110"/>
+		<view class="HyraxKnob" control-tag="Threshold" bitmap="KnobBig" origin="102, 50" size="110, 110"/>
+		<view class="HyraxKnob" control-tag="Ceiling" bitmap="KnobBig" origin="103, 219" size="110, 110"/>
 
 		<!-- Small knobs: Look Ahead, Release, Stereo Link -->
-		<view class="CAnimKnob" control-tag="LookAhead" bitmap="KnobSmall" origin="354, 178" size="110, 110"/>
-		<view class="CAnimKnob" control-tag="Release" bitmap="KnobSmall" origin="463, 177" size="110, 110"/>
-		<view class="CAnimKnob" control-tag="StereoLink" bitmap="KnobSmall" origin="573, 178" size="110, 110"/>
+		<view class="HyraxKnob" control-tag="LookAhead" bitmap="KnobSmall" origin="354, 178" size="110, 110"/>
+		<view class="HyraxKnob" control-tag="Release" bitmap="KnobSmall" origin="463, 177" size="110, 110"/>
+		<view class="HyraxKnob" control-tag="StereoLink" bitmap="KnobSmall" origin="573, 178" size="110, 110"/>
 
 		<!-- Toggle buttons: Bypass (red), True Peak (green) -->
 		<view class="COnOffButton" control-tag="Bypass" bitmap="BypassButton" origin="715, 61" size="50, 30"/>

@@ -46,22 +46,11 @@ jobs:
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
+      # Build also runs the SDK's post-build validator (SMTG_RUN_VST_VALIDATOR,
+      # on by default), which loads the freshly built .vst3 — so a plugin that
+      # fails to load fails the build here.
       - name: Build
         run: cmake --build build --config Release --parallel
-
-      # Work around a vst3sdk naming bug on Windows:
-      # - Architecture folder is x86_64-win instead of x86_64-win64
-      # Note: the binary keeps its .vst3 extension — hosts (e.g. FL Studio)
-      # expect .vst3, not .dll, inside the bundle.
-      - name: Fix Windows bundle naming
-        if: matrix.name == 'windows'
-        shell: bash
-        run: |
-          bundle=$(find build -name "HyraxLimiter.vst3" -type d -print -quit)
-          # Rename architecture subdirectory to VST3 spec name
-          if [ -d "$bundle/Contents/x86_64-win" ]; then
-            mv "$bundle/Contents/x86_64-win" "$bundle/Contents/x86_64-win64"
-          fi
 
       # The .vst3 bundle location differs slightly per generator; collect any
       # HyraxLimiter.vst3 produced under the build tree.

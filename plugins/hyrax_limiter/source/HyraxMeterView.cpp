@@ -16,7 +16,7 @@ namespace {
 constexpr uint32_t kTimerMs = 33;         // ~30 Hz redraw / needle update
 constexpr double kBallisticTauMs = 150.0; // one-pole needle smoothing (VU feel)
 
-// One frame of GainReductionMeter.png. The asset is a horizontal filmstrip of
+// One frame of gain_reduction_meter.png. The asset is a horizontal filmstrip of
 // 128 px-wide frames (3968 x 94 = 31 frames); the frame count is derived from
 // the bitmap width at draw time so re-exporting with more/fewer frames just
 // works as long as the frame width stays 128.

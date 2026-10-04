@@ -2,12 +2,12 @@
 <vstgui-ui-description version="1">
 	<fonts/>
 	<bitmaps>
-		<bitmap name="Background" path="hyrax_front_panel_moog.png"/>
-		<bitmap name="GainReductionMeter" path="GainReductionMeter.png"/>
-		<bitmap name="KnobBig" path="Knob_Minimoog_Big.png" multiframe-size="110, 110" multiframe-num-frames="31" mulitframe-frames-per-row="1"/>
-		<bitmap name="KnobSmall" path="Knob_Minimoog_Small.png" multiframe-size="110, 110" multiframe-num-frames="31" mulitframe-frames-per-row="1"/>
-		<bitmap name="BypassButton" path="BypassButton.png"/>
-		<bitmap name="TruePeakButton" path="TruePeakButton.png"/>
+		<bitmap name="Background" path="front_panel.png"/>
+		<bitmap name="GainReductionMeter" path="gain_reduction_meter.png"/>
+		<bitmap name="KnobBig" path="knob_big.png" multiframe-size="110, 110" multiframe-num-frames="31" mulitframe-frames-per-row="1"/>
+		<bitmap name="KnobSmall" path="knob_small.png" multiframe-size="110, 110" multiframe-num-frames="31" mulitframe-frames-per-row="1"/>
+		<bitmap name="BypassButton" path="bypass_button.png"/>
+		<bitmap name="TruePeakButton" path="true_peak_button.png"/>
 	</bitmaps>
 	<colors>
 		<color name="PanelBack" rgba="#1e1e20ff"/>

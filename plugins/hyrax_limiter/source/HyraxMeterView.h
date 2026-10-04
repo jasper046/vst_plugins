@@ -14,7 +14,8 @@ namespace cotg::hyrax {
 
 // Single-channel analog VU-style gain-reduction meter for the Hyrax editor.
 // Renders one frame of a horizontal filmstrip bitmap (GainReductionMeter.png),
-// picking the frame from the channel's read-only gain-reduction parameter. The
+// picking the frame from the channel's read-only gain-reduction parameter
+// (filmstrip asset: gain_reduction_meter.png). The
 // view is instantiated once per channel (L / R) and placed side by side.
 //
 // The parameter is polled on a timer rather than bound to a control tag; the

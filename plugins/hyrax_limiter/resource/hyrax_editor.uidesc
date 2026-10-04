@@ -35,11 +35,11 @@
 		<view class="COnOffButton" control-tag="TruePeak" bitmap="TruePeakButton" origin="271, 217" size="50, 30"/>
 
 		<!-- Editable value readouts under each knob (units are baked into the panel) -->
-		<view class="CTextEdit" control-tag="Threshold" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="129, 163" size="56, 16"/>
-		<view class="CTextEdit" control-tag="Ceiling" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="130, 332" size="56, 16"/>
-		<view class="CTextEdit" control-tag="LookAhead" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="386, 291" size="46, 15"/>
-		<view class="CTextEdit" control-tag="Release" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="495, 290" size="46, 15"/>
-		<view class="CTextEdit" control-tag="StereoLink" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="605, 291" size="46, 15"/>
+		<view class="CTextEdit" control-tag="Threshold" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="129, 159" size="56, 16"/>
+		<view class="CTextEdit" control-tag="Ceiling" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="130, 328" size="56, 16"/>
+		<view class="CTextEdit" control-tag="LookAhead" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="386, 280" size="46, 15"/>
+		<view class="CTextEdit" control-tag="Release" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="495, 280" size="46, 15"/>
+		<view class="CTextEdit" control-tag="StereoLink" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="0" style-round-rect="true" round-rect-radius="4" origin="605, 280" size="46, 15"/>
 
 	</template>
 	<custom>

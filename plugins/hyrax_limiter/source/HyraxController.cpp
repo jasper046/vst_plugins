@@ -9,6 +9,7 @@
 #include "public.sdk/source/vst/vstparameters.h"
 #include "vstgui/uidescription/uiattributes.h"
 
+#include <cmath>
 #include <cstring>
 
 using namespace Steinberg;
@@ -176,6 +177,27 @@ tresult PLUGIN_API HyraxController::setParamNormalized(ParamID tag, ParamValue v
         componentHandler->restartComponent(kLatencyChanged);
 
     return result;
+}
+
+tresult PLUGIN_API HyraxController::getParamValueByString(ParamID tag, TChar* string,
+                                                          ParamValue& valueNormalized)
+{
+    // Threshold and Ceiling span non-positive dB only. Some hosts (notably
+    // REAPER on Linux) swallow the '-' key for their own shortcuts, so a typed
+    // negative is impossible, and a bare positive entry would be out of range
+    // anyway (clamped to 0). Interpret the typed magnitude as negative dB:
+    // "12" -> -12 dB; an explicit "-12" still works where the minus gets through.
+    if (tag == kThreshold || tag == kCeiling)
+    {
+        UString wrapper(string, tstrlen(string));
+        double plain = 0.0;
+        if (!wrapper.scanFloat(plain))
+            return kResultFalse;
+        valueNormalized = toNorm(tag == kThreshold ? kThresholdRange : kCeilingRange,
+                                 -std::fabs(plain));
+        return kResultTrue;
+    }
+    return EditController::getParamValueByString(tag, string, valueNormalized);
 }
 
 } // namespace cotg::hyrax

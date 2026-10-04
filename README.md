@@ -12,7 +12,7 @@ header-only library so each plugin reuses the same primitives.
 
 | Plugin | Status | Source JSFX |
 |--------|--------|-------------|
-| **Hyrax Limiter** | ✅ v1 (full parity) | `hyrax_limiter.jsfx` |
+| **Hyrax Limiter** | ✅ 1.0.0 (full parity) | `hyrax_limiter.jsfx` |
 
 The Hyrax Limiter is a real-time causal port of the Matchering ("Hyrax")
 mastering limiter: look-ahead peak limiting with a multi-stage release and
@@ -26,6 +26,16 @@ It adds a small fixed latency (reported to the host). Peaks at or below the
 Ceiling pass untouched; only peaks that escape past it are bent. Note it is a soft
 clipper, not a true-peak limiter, so it strongly reduces but does not fully
 guarantee inter-sample peaks below 0 dBTP.
+
+### Interface
+
+Hyrax has a custom panel UI: large **Threshold** and **Ceiling** knobs, smaller
+**Look Ahead**, **Release** and **Stereo Link** knobs, **Bypass** and **True Peak**
+toggle buttons, and a pair of analog-style gain-reduction meters (one per channel).
+Double-click any knob to reset it to its default. Each knob has an editable value
+field below it; for the always-negative Threshold and Ceiling fields you can type a
+bare number (e.g. `12`) and it is read as negative dBFS (`-12`), so the minus key is
+optional.
 
 ## Repository layout
 
@@ -87,7 +97,7 @@ sudo apt-get install -y libx11-dev libxext-dev libxcb1-dev libxcb-util-dev \
 The SDK builds a `validator` that runs Steinberg's conformance tests:
 
 ```sh
-./build/bin/validator build/VST3/Release/HyraxLimiter.vst3
+./build/bin/Release/validator build/VST3/Release/HyraxLimiter.vst3
 ```
 
 ## Licensing

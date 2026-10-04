@@ -18,7 +18,7 @@ if(NOT EXISTS "${vst3sdk_SOURCE_DIR}/CMakeLists.txt")
 endif()
 
 project(cotg_vst_plugins
-    VERSION 0.1.6
+    VERSION 1.0.0
     DESCRIPTION "Code of the Geeks VST3 plugin family"
     LANGUAGES C CXX)
 

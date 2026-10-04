@@ -18,8 +18,6 @@ set(hyrax_sources
     source/HyraxController.cpp
     source/HyraxMeterView.h
     source/HyraxMeterView.cpp
-    source/HyraxSlider.h
-    source/HyraxSlider.cpp
     source/HyraxEntry.cpp
     source/version.h
 )
@@ -48,6 +46,11 @@ smtg_target_add_plugin_resources(${target}
     RESOURCES
         resource/hyrax_editor.uidesc
         resource/GainReductionMeter.png
+        resource/hyrax_front_panel_moog.png
+        resource/Knob_Minimoog_Big.png
+        resource/Knob_Minimoog_Small.png
+        resource/BypassButton.png
+        resource/TruePeakButton.png
 )
 
 smtg_target_configure_version_file(${target})

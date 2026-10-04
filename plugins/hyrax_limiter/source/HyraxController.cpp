@@ -2,7 +2,6 @@
 
 #include "HyraxMeterView.h"
 #include "HyraxParams.h"
-#include "HyraxSlider.h"
 
 #include "base/source/fstreamer.h"
 #include "pluginterfaces/base/ustring.h"
@@ -145,20 +144,6 @@ CView* HyraxController::createCustomView(UTF8StringPtr name, const UIAttributes&
                 paramId = kGainReductionR;
         CBitmap* filmstrip = description->getBitmap("GainReductionMeter");
         return new HyraxMeterView(rect, this, filmstrip, paramId);
-    }
-
-    // Sliders are built with a null listener and no tag applied by the "CView"
-    // base attributes, so we wire the control tag and the editor as listener
-    // here. verifyView() then binds the control to its parameter (it requires
-    // listener == editor and a valid tag).
-    if (std::strcmp(name, "HyraxSlider") == 0)
-    {
-        int32_t tag = -1;
-        if (const std::string* tagName = attributes.getAttributeValue("control-tag"))
-            tag = description->getTagForName(tagName->c_str());
-        auto* view = new HyraxSlider(rect, tag);
-        view->setListener(editor);
-        return view;
     }
 
     return nullptr;

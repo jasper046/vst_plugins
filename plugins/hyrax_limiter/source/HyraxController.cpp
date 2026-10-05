@@ -180,17 +180,12 @@ tresult PLUGIN_API HyraxController::setComponentState(IBStream* state)
 
 tresult PLUGIN_API HyraxController::setParamNormalized(ParamID tag, ParamValue value)
 {
-    const ParamValue previous = getParamNormalized(tag);
-    const tresult result = EditController::setParamNormalized(tag, value);
-
-    // Only Look-Ahead changes reported latency; ask the host to re-read it. The
-    // ferro toggle does NOT change latency (its delay is always incurred), so it
-    // must not trigger a latency restart -- that was causing a mid-playback PDC
-    // renegotiation and a lasting delay mismatch.
-    if (tag == kLookAhead && value != previous && componentHandler)
-        componentHandler->restartComponent(kLatencyChanged);
-
-    return result;
+    // The processor reports a constant latency (the engine always delays by the
+    // maximum look-ahead and routes disabled stages through matched delays), so
+    // no parameter edit ever changes latency -- there is nothing to restart. This
+    // avoids the mid-playback PDC renegotiation that left a lasting delay
+    // mismatch when Look-Ahead or the ferro toggle changed.
+    return EditController::setParamNormalized(tag, value);
 }
 
 tresult PLUGIN_API HyraxController::getParamValueByString(ParamID tag, TChar* string,

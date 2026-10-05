@@ -14,7 +14,7 @@ struct Params
 {
     double thresholdDb = 0.0;     // -20..0
     double ceilingDb = -0.1;      // -6..0
-    double lookAheadMs = 1.0;     // 0..20
+    double lookAheadMs = 5.0;     // 0..20
     double releaseMs = 3000.0;    // 50..3000
     double stereoLinkPct = 100.0; // 0..100
     bool truePeak = true;         // Off/On
@@ -37,8 +37,12 @@ class HyraxDsp
 {
 public:
     // Allocate buffers and derive sample-rate-dependent state. Call before use
-    // and whenever the sample rate changes.
-    void prepare(double sampleRate);
+    // and whenever the sample rate changes. maxLookAheadMs is the top of the
+    // Look-Ahead parameter range: the engine always delays the output by this
+    // much (a trailing delay makes up the difference below the current setting),
+    // so reported latency is constant and moving Look-Ahead never renegotiates
+    // the host's delay compensation.
+    void prepare(double sampleRate, double maxLookAheadMs);
 
     // Clear all runtime state (buffers, envelopes) without reallocating.
     void reset();
@@ -50,15 +54,15 @@ public:
     // Process one stereo sample in place.
     void processSample(double& left, double& right);
 
-    // Total latency in samples: look-ahead, the always-on oversampled safety
-    // clipper, and the ferro stage. Ferro's latency is ALWAYS counted (when it is
-    // disabled the signal passes through a matched delay instead), so toggling
-    // any output-stage button never changes latency -- only the Look-Ahead knob
-    // does. That avoids a mid-playback PDC renegotiation (which some hosts only
-    // re-sync on transport restart, leaving a lasting delay mismatch).
+    // Total latency in samples: the MAXIMUM look-ahead, the always-on oversampled
+    // safety clipper, and the ferro stage. Everything is counted unconditionally
+    // -- Look-Ahead below its max is made up by a trailing delay, ferro-off runs
+    // through a matched delay -- so no parameter changes latency during playback.
+    // That avoids the mid-playback PDC renegotiation some hosts only re-sync on
+    // transport restart (which left a lasting delay mismatch).
     int latencySamples() const
     {
-        return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples +
+        return maxLookSamples_ + cotg::dsp::Oversampler::kLatencySamples +
                ferro_.latencySamples();
     }
 
@@ -76,6 +80,14 @@ private:
     cotg::dsp::RingBuffer right_;
     cotg::dsp::RingBuffer peak_;
     int laMax_ = 0;
+    int maxLookSamples_ = 0; // = max Look-Ahead; the constant output delay target
+
+    // Trailing delay that pads the current look-ahead up to maxLookSamples_, so
+    // total latency stays constant as Look-Ahead changes. Runs last, after the
+    // whole output stage. Fed every sample so moving Look-Ahead only steps the
+    // read offset (one-time discontinuity, no latency change).
+    cotg::dsp::RingBuffer laCompL_;
+    cotg::dsp::RingBuffer laCompR_;
 
     // --- derived parameters ---
     double thresh_ = 1.0;    // linear

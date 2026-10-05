@@ -89,14 +89,11 @@ tresult PLUGIN_API HyraxProcessor::setActive(TBool state)
 {
     if (state)
     {
-        dsp_.prepare(sampleRate_);
+        dsp_.prepare(sampleRate_, kLookAheadRange.max);
 
-        // Size the latency-matched bypass delay to the maximum possible latency
-        // (longest look-ahead + the oversampled guard + the ferro stage).
-        const int maxLook =
-            static_cast<int>(std::floor(kLookAheadRange.max * 0.001 * sampleRate_));
-        const int cap = maxLook + cotg::dsp::Oversampler::kLatencySamples +
-                        cotg::dsp::FerroSaturator::filterLatencySamples() + 2;
+        // Size the latency-matched bypass delay to the (now constant) reported
+        // latency, with a little headroom.
+        const int cap = reportedLatencySamples() + 2;
         bypassL_.resize(cap);
         bypassR_.resize(cap);
 
@@ -108,22 +105,19 @@ tresult PLUGIN_API HyraxProcessor::setActive(TBool state)
 
 int HyraxProcessor::reportedLatencySamples() const
 {
-    // Look-ahead in samples for the current parameter value. Matches the engine
-    // (floor, minimum of one sample).
-    const double la = toPlain(kLookAheadRange, norm_[kLookAhead]);
-    const int s = std::max(1, static_cast<int>(std::floor(la * 0.001 * sampleRate_)));
-    // Plus the always-on oversampled safety clipper and the ferro stage. Ferro's
-    // latency is counted unconditionally (the engine routes the signal through a
-    // matched delay when ferro is disabled), so toggling output-stage buttons
-    // never changes latency -- only the Look-Ahead knob does.
-    return s + cotg::dsp::Oversampler::kLatencySamples +
+    // Constant latency: the engine always delays by the MAXIMUM look-ahead (a
+    // trailing delay pads the current setting up to it), so no parameter changes
+    // latency during playback. = max look-ahead + the oversampled guard + ferro.
+    const int maxLook =
+        std::max(1, static_cast<int>(std::floor(kLookAheadRange.max * 0.001 * sampleRate_)));
+    return maxLook + cotg::dsp::Oversampler::kLatencySamples +
            cotg::dsp::FerroSaturator::filterLatencySamples();
 }
 
 uint32 PLUGIN_API HyraxProcessor::getLatencySamples()
 {
-    // The controller triggers a latency-changed restart when Look-Ahead or the
-    // ferro toggle is edited, so the host re-reads this.
+    // Constant across all parameter changes; only the sample rate (re-prepared on
+    // activation) affects it, so no mid-playback latency restart is ever needed.
     return static_cast<uint32>(reportedLatencySamples());
 }
 

@@ -11,15 +11,23 @@ constexpr double kPi = 3.14159265358979323846;
 double dbToLin(double db) { return std::pow(10.0, db / 20.0); }
 } // namespace
 
-void HyraxDsp::prepare(double sampleRate)
+void HyraxDsp::prepare(double sampleRate, double maxLookAheadMs)
 {
     sampleRate_ = sampleRate > 0.0 ? sampleRate : 48000.0;
 
-    // Ring buffers sized for the maximum look-ahead (25 ms, generous headroom).
-    laMax_ = static_cast<int>(std::ceil(0.025 * sampleRate_)) + 4;
+    // The constant output-delay target = the top of the Look-Ahead range.
+    maxLookSamples_ = std::max(1, static_cast<int>(std::floor(maxLookAheadMs * 0.001 * sampleRate_)));
+
+    // Ring buffers sized for the maximum look-ahead (+ headroom over the range).
+    laMax_ = maxLookSamples_ + 4;
     left_.resize(laMax_);
     right_.resize(laMax_);
     peak_.resize(laMax_);
+
+    // Trailing compensation delay: holds up to maxLookSamples_ so (max - current)
+    // pads the output back to the constant latency.
+    laCompL_.resize(maxLookSamples_ + 1);
+    laCompR_.resize(maxLookSamples_ + 1);
 
     // Matched delays for the guard-off bypass path (= the oversampler's group
     // delay, so toggling the guard never shifts timing or latency).
@@ -70,6 +78,8 @@ void HyraxDsp::reset()
     scBypassR_.clear();
     ferroBypassL_.clear();
     ferroBypassR_.clear();
+    laCompL_.clear();
+    laCompR_.clear();
 }
 
 void HyraxDsp::setParameters(const Params& p)
@@ -272,6 +282,19 @@ void HyraxDsp::processSample(double& left, double& right)
         outL = bypassL;
         outR = bypassR;
     }
+
+    // Trailing look-ahead compensation: delay the finished output by
+    // (maxLookSamples_ - lookSamples_) so the total output delay is always
+    // maxLookSamples_, independent of the current Look-Ahead setting. Fed every
+    // sample; moving Look-Ahead only steps the read offset, so reported latency
+    // never changes and the host's delay compensation stays valid.
+    laCompL_.write(outL);
+    laCompR_.write(outR);
+    const int comp = maxLookSamples_ - lookSamples_;
+    outL = laCompL_.back(comp);
+    outR = laCompR_.back(comp);
+    laCompL_.advance();
+    laCompR_.advance();
 
     left = outL;
     right = outR;

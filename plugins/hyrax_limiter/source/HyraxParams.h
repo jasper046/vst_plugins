@@ -17,6 +17,14 @@ enum ParamId : Steinberg::Vst::ParamID
     kTruePeak,
     kBypass,
 
+    // OUTPUT STAGE toggles (persisted). Appended after kBypass so the IDs 0..6
+    // above are unchanged — existing automation, saved state and the .uidesc
+    // control-tags keep working. New persisted params must go here, before
+    // kNumAutomatable.
+    kFerroSaturation,
+    kSoftClipperEnable,
+    kSlewLimiter,
+
     // Count of parameters persisted in processor state. Everything below this
     // line is NOT serialized (see getState/setState), so it must stay put — add
     // non-persisted params after it, never before.
@@ -54,8 +62,11 @@ constexpr PRange kLookAheadRange {0.0, 20.0, 1.0};
 constexpr PRange kReleaseRange {50.0, 6000.0, 3000.0};
 constexpr PRange kStereoLinkRange {0.0, 100.0, 100.0};
 
-// Toggle default (normalized: 0 = Off, 1 = On).
-constexpr double kTruePeakDefaultNorm = 1.0; // On
+// Toggle defaults (normalized: 0 = Off, 1 = On).
+constexpr double kTruePeakDefaultNorm = 1.0;         // On
+constexpr double kFerroSaturationDefaultNorm = 0.0;  // Off
+constexpr double kSoftClipperDefaultNorm = 1.0;      // On (keeps the 0 dBFS guard)
+constexpr double kSlewLimiterDefaultNorm = 0.0;      // Off
 
 inline double toPlain(const PRange& r, double norm)
 {

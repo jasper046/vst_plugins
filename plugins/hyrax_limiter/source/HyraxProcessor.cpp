@@ -29,6 +29,9 @@ void HyraxProcessor::initDefaults()
     norm_[kStereoLink] = toNorm(kStereoLinkRange, kStereoLinkRange.def);
     norm_[kTruePeak] = kTruePeakDefaultNorm;
     norm_[kBypass] = 0.0; // bypass off by default
+    norm_[kFerroSaturation] = kFerroSaturationDefaultNorm;
+    norm_[kSoftClipperEnable] = kSoftClipperDefaultNorm;
+    norm_[kSlewLimiter] = kSlewLimiterDefaultNorm;
 }
 
 void HyraxProcessor::applyParametersToEngine()
@@ -40,6 +43,9 @@ void HyraxProcessor::applyParametersToEngine()
     p.releaseMs = toPlain(kReleaseRange, norm_[kRelease]);
     p.stereoLinkPct = toPlain(kStereoLinkRange, norm_[kStereoLink]);
     p.truePeak = norm_[kTruePeak] >= 0.5;
+    p.ferro = norm_[kFerroSaturation] >= 0.5;
+    p.softClip = norm_[kSoftClipperEnable] >= 0.5;
+    p.slew = norm_[kSlewLimiter] >= 0.5;
     dsp_.setParameters(p);
 }
 
@@ -98,8 +104,13 @@ uint32 PLUGIN_API HyraxProcessor::getLatencySamples()
     // restart when the Look-Ahead parameter is edited, so the host re-reads this.
     const double la = toPlain(kLookAheadRange, norm_[kLookAhead]);
     const int s = std::max(1, static_cast<int>(std::floor(la * 0.001 * sampleRate_)));
-    // Plus the always-on oversampled safety clipper's fixed latency.
-    return static_cast<uint32>(s + cotg::dsp::Oversampler::kLatencySamples);
+    // Plus the always-on oversampled safety clipper's fixed latency, plus the
+    // ferro stage's min-phase oversampler when it is engaged (the controller
+    // triggers a latency-changed restart when the ferro toggle flips).
+    int extra = cotg::dsp::Oversampler::kLatencySamples;
+    if (norm_[kFerroSaturation] >= 0.5)
+        extra += cotg::dsp::FerroSaturator::filterLatencySamples();
+    return static_cast<uint32>(s + extra);
 }
 
 template <typename SampleT>
@@ -241,7 +252,7 @@ tresult PLUGIN_API HyraxProcessor::setState(IBStream* state)
     {
         double v = 0.0;
         if (!streamer.readDouble(v))
-            return kResultFalse;
+            break; // older state with fewer params; keep defaults for the rest
         norm_[i] = v;
     }
     paramsDirty_ = true;

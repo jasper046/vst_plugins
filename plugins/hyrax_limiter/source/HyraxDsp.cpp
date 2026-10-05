@@ -21,6 +21,18 @@ void HyraxDsp::prepare(double sampleRate)
     right_.resize(laMax_);
     peak_.resize(laMax_);
 
+    // OUTPUT STAGE effects, configured to their frozen production settings (see
+    // FerroSaturator.h / SlewLimiter.h). The ferro ceiling reference is a
+    // placeholder here; setParameters() updates it from the Ceiling slider before
+    // any audio runs.
+    namespace dsp = cotg::dsp;
+    ferro_.configure(sampleRate_, dsp::FerroSaturator::kDriveDbDefault,
+                     dsp::FerroSaturator::kKneeDefault, dsp::FerroSaturator::kCeilingDefault,
+                     dsp::FerroSaturator::kAsymDefault, /*ceilingDbfs*/ 0.0,
+                     dsp::FerroSaturator::kHfBypassHzDefault);
+    slew_.configure(sampleRate_, dsp::SlewLimiter::kPctDefault,
+                    dsp::SlewLimiter::kKneeFracDefault, dsp::SlewLimiter::kHpHzDefault);
+
     reset();
 }
 
@@ -43,6 +55,8 @@ void HyraxDsp::reset()
 
     osL_.reset();
     osR_.reset();
+    ferro_.reset();
+    slew_.reset();
 }
 
 void HyraxDsp::setParameters(const Params& p)
@@ -51,8 +65,19 @@ void HyraxDsp::setParameters(const Params& p)
     ceiling_ = dbToLin(p.ceilingDb);
     makeup_ = ceiling_ / thresh_;
 
-    // Ceiling-tied safety clipper: knee spans from the Ceiling up to 0 dBFS.
-    softClip_.configure(0.0, std::max(0.0, -p.ceilingDb));
+    // Soft clipper as a transparent 0 dBFS safety guard (ceiling 0 dBFS, fixed
+    // 0.5 dB knee), independent of the Ceiling slider. The limiter already seats
+    // the program at the Ceiling; the guard only bends genuine 0 dBFS overs,
+    // rather than rounding every limited peak down (which added harshness).
+    softClip_.configure(0.0, kSoftClipGuardKneeDb);
+
+    // OUTPUT STAGE toggles + ferro's ceiling reference (the normalized domain
+    // tracks the Ceiling slider). setCeilingDbfs is state-preserving, so this is
+    // safe every block.
+    ferroEnabled_ = p.ferro;
+    softClipEnabled_ = p.softClip;
+    slewEnabled_ = p.slew;
+    ferro_.setCeilingDbfs(p.ceilingDb);
 
     // Look-ahead in samples, clamped to the allocated buffer.
     int look = static_cast<int>(std::floor(p.lookAheadMs * 0.001 * sampleRate_));
@@ -160,28 +185,50 @@ void HyraxDsp::processSample(double& left, double& right)
     right_.advance();
     peak_.advance();
 
-    // --- output true-peak safety clipper: 4x oversampled soft clip so genuine
-    // inter-sample peaks that escaped the limiter are caught, guaranteeing the
-    // output never exceeds 0 dBFS. Adds Oversampler::kLatencySamples of latency.
+    // --- OUTPUT STAGE: ferro -> slew -> soft-clip 0 dBFS guard (soft clip last
+    // so it owns the final ceiling). Ferro and slew are optional effects; the
+    // soft clip defaults on. ---
+
+    // Ferro-magnetic saturation: ceiling-normalized warmth on the low band, HF
+    // kept clean. Adds ferro_.latencySamples() of latency when engaged (reported
+    // to the host; the controller restarts on the toggle).
+    if (ferroEnabled_)
+        ferro_.process(outL, outR);
+
+    // Flat slew-rate limiter: content-adaptive HF smoothness. No added latency.
+    if (slewEnabled_)
+        slew_.process(outL, outR);
+
+    // Soft-clip 0 dBFS guard: 4x oversampled soft clip so genuine inter-sample
+    // peaks that escaped the limiter are caught. The oversampler runs
+    // unconditionally (fixed Oversampler::kLatencySamples of latency); only the
+    // clip + the final clamp are gated, so toggling the guard does not change
+    // latency.
     double up[cotg::dsp::Oversampler::kOS];
     osL_.upsample(outL, up);
-    for (double& s : up)
-        s = softClip_.clip(s);
+    if (softClipEnabled_)
+        for (double& s : up)
+            s = softClip_.clip(s);
     outL = osL_.downsample(up);
 
     osR_.upsample(outR, up);
-    for (double& s : up)
-        s = softClip_.clip(s);
+    if (softClipEnabled_)
+        for (double& s : up)
+            s = softClip_.clip(s);
     outR = osR_.downsample(up);
 
-    // Absolute sample-domain guarantee: no output sample exceeds 0 dBFS. The
-    // decimation filter can leave a hair of overshoot past what the soft clip
-    // caught; this hard clamp (which engages essentially never) makes "the
-    // output never actually clips" a hard guarantee. Inter-sample (true) peaks
-    // are strongly reduced by the oversampled soft clip but, being a clipper
-    // rather than a true-peak limiter, not guaranteed below 0 dBTP.
-    outL = std::clamp(outL, -1.0, 1.0);
-    outR = std::clamp(outR, -1.0, 1.0);
+    // Absolute sample-domain guarantee: with the guard on, no output sample
+    // exceeds 0 dBFS. The decimation filter can leave a hair of overshoot past
+    // what the soft clip caught; this hard clamp (which engages essentially
+    // never) makes "the output never actually clips" a hard guarantee. Inter-
+    // sample (true) peaks are strongly reduced by the oversampled soft clip but,
+    // being a clipper rather than a true-peak limiter, not guaranteed below
+    // 0 dBTP. Gated with the guard so disabling it is fully transparent.
+    if (softClipEnabled_)
+    {
+        outL = std::clamp(outL, -1.0, 1.0);
+        outR = std::clamp(outR, -1.0, 1.0);
+    }
 
     left = outL;
     right = outR;

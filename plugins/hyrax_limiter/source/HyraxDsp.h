@@ -1,7 +1,9 @@
 #pragma once
 
+#include "cotg/dsp/FerroSaturator.h"
 #include "cotg/dsp/Oversampler.h"
 #include "cotg/dsp/RingBuffer.h"
+#include "cotg/dsp/SlewLimiter.h"
 #include "cotg/dsp/SoftClipper.h"
 
 namespace cotg::hyrax {
@@ -16,6 +18,11 @@ struct Params
     double releaseMs = 3000.0;    // 50..6000
     double stereoLinkPct = 100.0; // 0..100
     bool truePeak = true;         // Off/On
+
+    // OUTPUT STAGE toggles.
+    bool ferro = false;    // ferro-magnetic saturation
+    bool softClip = true;  // 0 dBFS safety guard (On preserves the guarantee)
+    bool slew = false;     // flat slew-rate limiter (HF smoothness)
 };
 
 // Real-time causal approximation of the Matchering ("Hyrax") mastering limiter.
@@ -43,10 +50,12 @@ public:
     // Process one stereo sample in place.
     void processSample(double& left, double& right);
 
-    // Total latency in samples: look-ahead plus the oversampled safety clipper.
+    // Total latency in samples: look-ahead, the always-on oversampled safety
+    // clipper, and the ferro stage's min-phase oversampler when it is engaged.
     int latencySamples() const
     {
-        return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples;
+        return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples +
+               (ferroEnabled_ ? ferro_.latencySamples() : 0);
     }
 
     // Per-channel gain reduction applied to the most recently processed sample,
@@ -98,6 +107,20 @@ private:
     cotg::dsp::Oversampler osL_;
     cotg::dsp::Oversampler osR_;
     cotg::dsp::SoftClipper softClip_;
+
+    // --- OUTPUT STAGE: ferro -> slew -> soft-clip 0 dBFS guard (soft clip last
+    // so it owns the final ceiling). Ferro and slew are toggled; the soft clip
+    // defaults on. ---
+    cotg::dsp::FerroSaturator ferro_;
+    cotg::dsp::SlewLimiter slew_;
+    bool ferroEnabled_ = false;
+    bool softClipEnabled_ = true;
+    bool slewEnabled_ = false;
+
+    // Soft clipper acts as a transparent 0 dBFS guard: ceiling 0 dBFS, a 0.5 dB
+    // knee below it. Independent of the Ceiling slider (the limiter enforces
+    // that), so normal program is untouched and only true 0 dBFS overs are bent.
+    static constexpr double kSoftClipGuardKneeDb = 0.5;
 
     static constexpr double kHoldMs = 1.0;
     static constexpr double kHoldLpHz = 7.0;

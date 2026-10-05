@@ -8,6 +8,7 @@
 		<bitmap name="KnobSmall" path="knob_small.png" multiframe-size="110, 110" multiframe-num-frames="31" mulitframe-frames-per-row="1"/>
 		<bitmap name="BypassButton" path="bypass_button.png"/>
 		<bitmap name="TruePeakButton" path="true_peak_button.png"/>
+		<bitmap name="OnOffGreen" path="on_off_green.png"/>
 	</bitmaps>
 	<colors>
 		<color name="PanelBack" rgba="#1e1e20ff"/>
@@ -31,8 +32,15 @@
 		<view class="HyraxKnob" control-tag="StereoLink" bitmap="KnobSmall" origin="573, 178" size="110, 110"/>
 
 		<!-- Toggle buttons: Bypass (red), True Peak (green) -->
-		<view class="COnOffButton" control-tag="Bypass" bitmap="BypassButton" origin="715, 61" size="50, 30"/>
-		<view class="COnOffButton" control-tag="TruePeak" bitmap="TruePeakButton" origin="271, 217" size="50, 30"/>
+		<view class="COnOffButton" control-tag="Bypass" bitmap="BypassButton" origin="720, 61" size="50, 30"/>
+		<view class="COnOffButton" control-tag="TruePeak" bitmap="TruePeakButton" origin="273, 216" size="50, 30"/>
+
+		<!-- OUTPUT STAGE toggles (green On/Off), stacked in the box on the right.
+		     Positions track front_panel_w_buttons.png; align to the regenerated
+		     panel art when it lands. -->
+		<view class="COnOffButton" control-tag="FerroSaturation" bitmap="OnOffGreen" origin="720, 163" size="50, 30"/>
+		<view class="COnOffButton" control-tag="SoftClipper" bitmap="OnOffGreen" origin="720, 216" size="50, 30"/>
+		<view class="COnOffButton" control-tag="SlewLimiter" bitmap="OnOffGreen" origin="720, 270" size="50, 30"/>
 
 		<!-- Editable value readouts under each knob (units are baked into the panel) -->
 		<view class="CTextEdit" control-tag="Threshold" font="~ NormalFontSmall" font-color="TextColor" back-color="EditBack" frame-color="EditFrame" text-alignment="center" value-precision="1" style-round-rect="true" round-rect-radius="4" origin="129, 159" size="56, 16"/>
@@ -53,5 +61,8 @@
 		<control-tag name="StereoLink" tag="4"/>
 		<control-tag name="TruePeak" tag="5"/>
 		<control-tag name="Bypass" tag="6"/>
+		<control-tag name="FerroSaturation" tag="7"/>
+		<control-tag name="SoftClipper" tag="8"/>
+		<control-tag name="SlewLimiter" tag="9"/>
 	</control-tags>
 </vstgui-ui-description>

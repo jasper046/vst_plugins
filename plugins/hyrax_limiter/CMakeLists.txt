@@ -53,6 +53,7 @@ smtg_target_add_plugin_resources(${target}
         resource/knob_small.png
         resource/bypass_button.png
         resource/true_peak_button.png
+        resource/on_off_green.png
 )
 
 smtg_target_configure_version_file(${target})

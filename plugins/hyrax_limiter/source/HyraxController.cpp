@@ -89,6 +89,14 @@ tresult PLUGIN_API HyraxController::initialize(FUnknown* context)
     parameters.addParameter(
         new ToggleParameter(STR16("True Peak"), kTruePeak, kTruePeakDefaultNorm));
 
+    // OUTPUT STAGE toggles.
+    parameters.addParameter(
+        new ToggleParameter(STR16("Ferro Saturation"), kFerroSaturation, kFerroSaturationDefaultNorm));
+    parameters.addParameter(
+        new ToggleParameter(STR16("Soft Clipper"), kSoftClipperEnable, kSoftClipperDefaultNorm));
+    parameters.addParameter(
+        new ToggleParameter(STR16("Slew Limiter"), kSlewLimiter, kSlewLimiterDefaultNorm));
+
     // Bypass parameter — hosts use this for gapless bypass with latency
     // compensation. Build a ParameterInfo and use addParameter(info) so the
     // kIsBypass flag is set before the Parameter object is created.
@@ -160,7 +168,7 @@ tresult PLUGIN_API HyraxController::setComponentState(IBStream* state)
     {
         double v = 0.0;
         if (!streamer.readDouble(v))
-            return kResultFalse;
+            break; // older state with fewer params; keep registered defaults for the rest
         setParamNormalized(static_cast<ParamID>(i), v);
     }
     return kResultTrue;
@@ -171,9 +179,10 @@ tresult PLUGIN_API HyraxController::setParamNormalized(ParamID tag, ParamValue v
     const ParamValue previous = getParamNormalized(tag);
     const tresult result = EditController::setParamNormalized(tag, value);
 
-    // Changing the look-ahead changes reported latency; ask the host to re-read
-    // it (the processor reports latency from this parameter).
-    if (tag == kLookAhead && value != previous && componentHandler)
+    // Look-ahead and the ferro toggle both change reported latency (ferro's
+    // min-phase oversampler adds a few samples when engaged); ask the host to
+    // re-read it (the processor reports latency from these parameters).
+    if ((tag == kLookAhead || tag == kFerroSaturation) && value != previous && componentHandler)
         componentHandler->restartComponent(kLatencyChanged);
 
     return result;

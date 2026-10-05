@@ -56,10 +56,10 @@ struct PRange
     double def;
 };
 
-constexpr PRange kThresholdRange {-30.0, 0.0, 0.0};
+constexpr PRange kThresholdRange {-20.0, 0.0, 0.0};
 constexpr PRange kCeilingRange {-6.0, 0.0, -0.1};
 constexpr PRange kLookAheadRange {0.0, 20.0, 1.0};
-constexpr PRange kReleaseRange {50.0, 6000.0, 3000.0};
+constexpr PRange kReleaseRange {50.0, 3000.0, 3000.0};
 constexpr PRange kStereoLinkRange {0.0, 100.0, 100.0};
 
 // Toggle defaults (normalized: 0 = Off, 1 = On). The whole OUTPUT STAGE ships

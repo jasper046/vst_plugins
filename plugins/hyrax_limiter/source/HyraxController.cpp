@@ -48,6 +48,10 @@ public:
         appendString(STR16("Off"));
         appendString(STR16("On"));
         setNormalized(defaultNorm);
+        // StringListParameter leaves info.defaultNormalizedValue at 0, so a host
+        // "reset to default" would force the toggle Off regardless of its real
+        // default. Record the actual default so reset and the validator agree.
+        getInfo().defaultNormalizedValue = defaultNorm;
     }
 
     // Override toNormalized so that plain values 0/1 map to 0.0/1.0 instead
@@ -179,10 +183,11 @@ tresult PLUGIN_API HyraxController::setParamNormalized(ParamID tag, ParamValue v
     const ParamValue previous = getParamNormalized(tag);
     const tresult result = EditController::setParamNormalized(tag, value);
 
-    // Look-ahead and the ferro toggle both change reported latency (ferro's
-    // min-phase oversampler adds a few samples when engaged); ask the host to
-    // re-read it (the processor reports latency from these parameters).
-    if ((tag == kLookAhead || tag == kFerroSaturation) && value != previous && componentHandler)
+    // Only Look-Ahead changes reported latency; ask the host to re-read it. The
+    // ferro toggle does NOT change latency (its delay is always incurred), so it
+    // must not trigger a latency restart -- that was causing a mid-playback PDC
+    // renegotiation and a lasting delay mismatch.
+    if (tag == kLookAhead && value != previous && componentHandler)
         componentHandler->restartComponent(kLatencyChanged);
 
     return result;

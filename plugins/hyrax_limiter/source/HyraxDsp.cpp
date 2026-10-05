@@ -21,6 +21,15 @@ void HyraxDsp::prepare(double sampleRate)
     right_.resize(laMax_);
     peak_.resize(laMax_);
 
+    // Matched delays for the guard-off bypass path (= the oversampler's group
+    // delay, so toggling the guard never shifts timing or latency).
+    scBypassL_.resize(cotg::dsp::Oversampler::kLatencySamples + 1);
+    scBypassR_.resize(cotg::dsp::Oversampler::kLatencySamples + 1);
+
+    // Matched delay (= ferro's latency) for the ferro-off path.
+    ferroBypassL_.resize(cotg::dsp::FerroSaturator::filterLatencySamples() + 1);
+    ferroBypassR_.resize(cotg::dsp::FerroSaturator::filterLatencySamples() + 1);
+
     // OUTPUT STAGE effects, configured to their frozen production settings (see
     // FerroSaturator.h / SlewLimiter.h). The ferro ceiling reference is a
     // placeholder here; setParameters() updates it from the Ceiling slider before
@@ -57,6 +66,10 @@ void HyraxDsp::reset()
     osR_.reset();
     ferro_.reset();
     slew_.reset();
+    scBypassL_.clear();
+    scBypassR_.clear();
+    ferroBypassL_.clear();
+    ferroBypassR_.clear();
 }
 
 void HyraxDsp::setParameters(const Params& p)
@@ -190,44 +203,74 @@ void HyraxDsp::processSample(double& left, double& right)
     // soft clip defaults on. ---
 
     // Ferro-magnetic saturation: ceiling-normalized warmth on the low band, HF
-    // kept clean. Adds ferro_.latencySamples() of latency when engaged (reported
-    // to the host; the controller restarts on the toggle).
+    // kept clean. Its latency is always incurred -- when disabled the signal is
+    // routed through a matched delay instead of the saturator -- so the toggle
+    // never changes reported latency (no mid-playback PDC renegotiation). The
+    // delay is fed every sample so it stays warm.
+    ferroBypassL_.write(outL);
+    ferroBypassR_.write(outR);
+    const double ferroBypassOutL = ferroBypassL_.back(ferro_.latencySamples());
+    const double ferroBypassOutR = ferroBypassR_.back(ferro_.latencySamples());
+    ferroBypassL_.advance();
+    ferroBypassR_.advance();
     if (ferroEnabled_)
+    {
         ferro_.process(outL, outR);
+    }
+    else
+    {
+        outL = ferroBypassOutL;
+        outR = ferroBypassOutR;
+    }
 
     // Flat slew-rate limiter: content-adaptive HF smoothness. No added latency.
     if (slewEnabled_)
         slew_.process(outL, outR);
 
+    // Feed the matched bypass delays (the guard-off path) every sample so they
+    // stay in sync and toggling the guard is click-free.
+    scBypassL_.write(outL);
+    scBypassR_.write(outR);
+    const double bypassL = scBypassL_.back(cotg::dsp::Oversampler::kLatencySamples);
+    const double bypassR = scBypassR_.back(cotg::dsp::Oversampler::kLatencySamples);
+    scBypassL_.advance();
+    scBypassR_.advance();
+
     // Soft-clip 0 dBFS guard: 4x oversampled soft clip so genuine inter-sample
     // peaks that escaped the limiter are caught. The oversampler runs
-    // unconditionally (fixed Oversampler::kLatencySamples of latency); only the
-    // clip + the final clamp are gated, so toggling the guard does not change
-    // latency.
+    // unconditionally so it stays warm and latency is constant; its output is
+    // used only when the guard is enabled.
     double up[cotg::dsp::Oversampler::kOS];
     osL_.upsample(outL, up);
     if (softClipEnabled_)
         for (double& s : up)
             s = softClip_.clip(s);
-    outL = osL_.downsample(up);
+    const double clippedL = osL_.downsample(up);
 
     osR_.upsample(outR, up);
     if (softClipEnabled_)
         for (double& s : up)
             s = softClip_.clip(s);
-    outR = osR_.downsample(up);
+    const double clippedR = osR_.downsample(up);
 
-    // Absolute sample-domain guarantee: with the guard on, no output sample
-    // exceeds 0 dBFS. The decimation filter can leave a hair of overshoot past
-    // what the soft clip caught; this hard clamp (which engages essentially
-    // never) makes "the output never actually clips" a hard guarantee. Inter-
-    // sample (true) peaks are strongly reduced by the oversampled soft clip but,
-    // being a clipper rather than a true-peak limiter, not guaranteed below
-    // 0 dBTP. Gated with the guard so disabling it is fully transparent.
     if (softClipEnabled_)
     {
-        outL = std::clamp(outL, -1.0, 1.0);
-        outR = std::clamp(outR, -1.0, 1.0);
+        // Absolute sample-domain guarantee: no output sample exceeds 0 dBFS. The
+        // decimation filter can leave a hair of overshoot past what the soft clip
+        // caught; this hard clamp (which engages essentially never) makes "the
+        // output never actually clips" a hard guarantee. Inter-sample (true)
+        // peaks are strongly reduced by the oversampled soft clip but, being a
+        // clipper rather than a true-peak limiter, not guaranteed below 0 dBTP.
+        outL = std::clamp(clippedL, -1.0, 1.0);
+        outR = std::clamp(clippedR, -1.0, 1.0);
+    }
+    else
+    {
+        // Guard off: bypass the oversampler entirely via the matched delay, so
+        // the output stage is fully transparent (no HF colouring) rather than
+        // passing the signal through the oversampler's low-pass round-trip.
+        outL = bypassL;
+        outR = bypassR;
     }
 
     left = outL;

@@ -62,11 +62,12 @@ constexpr PRange kLookAheadRange {0.0, 20.0, 1.0};
 constexpr PRange kReleaseRange {50.0, 6000.0, 3000.0};
 constexpr PRange kStereoLinkRange {0.0, 100.0, 100.0};
 
-// Toggle defaults (normalized: 0 = Off, 1 = On).
+// Toggle defaults (normalized: 0 = Off, 1 = On). The whole OUTPUT STAGE ships
+// enabled; the soft-clip guard on keeps the 0 dBFS guarantee.
 constexpr double kTruePeakDefaultNorm = 1.0;         // On
-constexpr double kFerroSaturationDefaultNorm = 0.0;  // Off
+constexpr double kFerroSaturationDefaultNorm = 1.0;  // On
 constexpr double kSoftClipperDefaultNorm = 1.0;      // On (keeps the 0 dBFS guard)
-constexpr double kSlewLimiterDefaultNorm = 0.0;      // Off
+constexpr double kSlewLimiterDefaultNorm = 1.0;      // On
 
 inline double toPlain(const PRange& r, double norm)
 {

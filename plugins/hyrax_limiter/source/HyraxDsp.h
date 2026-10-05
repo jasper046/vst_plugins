@@ -51,11 +51,15 @@ public:
     void processSample(double& left, double& right);
 
     // Total latency in samples: look-ahead, the always-on oversampled safety
-    // clipper, and the ferro stage's min-phase oversampler when it is engaged.
+    // clipper, and the ferro stage. Ferro's latency is ALWAYS counted (when it is
+    // disabled the signal passes through a matched delay instead), so toggling
+    // any output-stage button never changes latency -- only the Look-Ahead knob
+    // does. That avoids a mid-playback PDC renegotiation (which some hosts only
+    // re-sync on transport restart, leaving a lasting delay mismatch).
     int latencySamples() const
     {
         return lookSamples_ + cotg::dsp::Oversampler::kLatencySamples +
-               (ferroEnabled_ ? ferro_.latencySamples() : 0);
+               ferro_.latencySamples();
     }
 
     // Per-channel gain reduction applied to the most recently processed sample,
@@ -121,6 +125,20 @@ private:
     // knee below it. Independent of the Ceiling slider (the limiter enforces
     // that), so normal program is untouched and only true 0 dBFS overs are bent.
     static constexpr double kSoftClipGuardKneeDb = 0.5;
+
+    // Pure integer delays matching the oversampler's group delay, feeding the
+    // guard-OFF path. The oversampled up/down round-trip is a (mild) low-pass,
+    // not a perfect delay, so leaving it in the signal path when the guard is
+    // disabled would colour the output (an audible HF residual in out - in).
+    // Routing around it through a matched delay keeps "guard off" transparent
+    // while holding total latency constant (no host restart on the toggle).
+    cotg::dsp::RingBuffer scBypassL_;
+    cotg::dsp::RingBuffer scBypassR_;
+
+    // Matched delay (= ferro's latency) for the ferro-OFF path, so ferro's
+    // latency is always present and the toggle never changes reported latency.
+    cotg::dsp::RingBuffer ferroBypassL_;
+    cotg::dsp::RingBuffer ferroBypassR_;
 
     static constexpr double kHoldMs = 1.0;
     static constexpr double kHoldLpHz = 7.0;

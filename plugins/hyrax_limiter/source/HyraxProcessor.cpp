@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstring>
 
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -91,26 +90,41 @@ tresult PLUGIN_API HyraxProcessor::setActive(TBool state)
     if (state)
     {
         dsp_.prepare(sampleRate_);
+
+        // Size the latency-matched bypass delay to the maximum possible latency
+        // (longest look-ahead + the oversampled guard + the ferro stage).
+        const int maxLook =
+            static_cast<int>(std::floor(kLookAheadRange.max * 0.001 * sampleRate_));
+        const int cap = maxLook + cotg::dsp::Oversampler::kLatencySamples +
+                        cotg::dsp::FerroSaturator::filterLatencySamples() + 2;
+        bypassL_.resize(cap);
+        bypassR_.resize(cap);
+
         applyParametersToEngine();
         paramsDirty_ = false;
     }
     return AudioEffect::setActive(state);
 }
 
-uint32 PLUGIN_API HyraxProcessor::getLatencySamples()
+int HyraxProcessor::reportedLatencySamples() const
 {
     // Look-ahead in samples for the current parameter value. Matches the engine
-    // (floor, minimum of one sample). The controller triggers a latency-changed
-    // restart when the Look-Ahead parameter is edited, so the host re-reads this.
+    // (floor, minimum of one sample).
     const double la = toPlain(kLookAheadRange, norm_[kLookAhead]);
     const int s = std::max(1, static_cast<int>(std::floor(la * 0.001 * sampleRate_)));
-    // Plus the always-on oversampled safety clipper's fixed latency, plus the
-    // ferro stage's min-phase oversampler when it is engaged (the controller
-    // triggers a latency-changed restart when the ferro toggle flips).
-    int extra = cotg::dsp::Oversampler::kLatencySamples;
-    if (norm_[kFerroSaturation] >= 0.5)
-        extra += cotg::dsp::FerroSaturator::filterLatencySamples();
-    return static_cast<uint32>(s + extra);
+    // Plus the always-on oversampled safety clipper and the ferro stage. Ferro's
+    // latency is counted unconditionally (the engine routes the signal through a
+    // matched delay when ferro is disabled), so toggling output-stage buttons
+    // never changes latency -- only the Look-Ahead knob does.
+    return s + cotg::dsp::Oversampler::kLatencySamples +
+           cotg::dsp::FerroSaturator::filterLatencySamples();
+}
+
+uint32 PLUGIN_API HyraxProcessor::getLatencySamples()
+{
+    // The controller triggers a latency-changed restart when Look-Ahead or the
+    // ferro toggle is edited, so the host re-reads this.
+    return static_cast<uint32>(reportedLatencySamples());
 }
 
 template <typename SampleT>
@@ -122,13 +136,36 @@ void HyraxProcessor::processChannels(SampleT** in, SampleT** out, int numChannel
     SampleT* outL = out[0];
     SampleT* outR = numChannels > 1 ? out[1] : out[0];
 
+    // Delay for the bypass path, matching the active path's reported latency so a
+    // soft-bypassed signal stays aligned with the host's delay compensation.
+    const int L = std::min(reportedLatencySamples(), bypassL_.size() - 1);
+
     for (int32 i = 0; i < numSamples; ++i)
     {
         double l = static_cast<double>(inL[i]);
         double r = static_cast<double>(inR[i]);
-        dsp_.processSample(l, r);
-        blockPeakGrDbL_ = std::max(blockPeakGrDbL_, dsp_.gainReductionDbL());
-        blockPeakGrDbR_ = std::max(blockPeakGrDbR_, dsp_.gainReductionDbR());
+
+        // Feed the bypass delay every sample (kept warm so toggling bypass is
+        // click-free); its output is used only while bypassed.
+        bypassL_.write(l);
+        bypassR_.write(r);
+        const double bl = bypassL_.back(L);
+        const double br = bypassR_.back(L);
+        bypassL_.advance();
+        bypassR_.advance();
+
+        if (bypassed_)
+        {
+            l = bl;
+            r = br;
+        }
+        else
+        {
+            dsp_.processSample(l, r);
+            blockPeakGrDbL_ = std::max(blockPeakGrDbL_, dsp_.gainReductionDbL());
+            blockPeakGrDbR_ = std::max(blockPeakGrDbR_, dsp_.gainReductionDbR());
+        }
+
         outL[i] = static_cast<SampleT>(l);
         if (numChannels > 1)
             outR[i] = static_cast<SampleT>(r);
@@ -191,22 +228,11 @@ tresult PLUGIN_API HyraxProcessor::process(ProcessData& data)
         const int numChannels = std::min(data.inputs[0].numChannels, data.outputs[0].numChannels);
         if (numChannels > 0)
         {
-            if (bypassed_)
-            {
-                // Bypass: copy input straight to output for each channel.
-                for (int ch = 0; ch < numChannels; ++ch)
-                {
-                    if (data.symbolicSampleSize == kSample32)
-                        memcpy(data.outputs[0].channelBuffers32[ch],
-                               data.inputs[0].channelBuffers32[ch],
-                               data.numSamples * sizeof(float));
-                    else
-                        memcpy(data.outputs[0].channelBuffers64[ch],
-                               data.inputs[0].channelBuffers64[ch],
-                               data.numSamples * sizeof(double));
-                }
-            }
-            else if (data.symbolicSampleSize == kSample32)
+            // Bypass is handled inside processChannels via a latency-matched delay
+            // so the soft-bypassed signal stays aligned with the host's delay
+            // compensation (a plain copy would sit ahead of it and comb-filter a
+            // dry/wet null instead of cancelling).
+            if (data.symbolicSampleSize == kSample32)
                 processChannels(data.inputs[0].channelBuffers32, data.outputs[0].channelBuffers32,
                                 numChannels, data.numSamples);
             else

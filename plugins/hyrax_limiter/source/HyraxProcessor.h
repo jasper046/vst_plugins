@@ -39,6 +39,13 @@ private:
     void initDefaults();
     void applyParametersToEngine();
 
+    // Reported processing latency in samples for the current parameters (look-
+    // ahead + the always-on oversampled guard + the ferro stage when engaged).
+    // Shared by getLatencySamples() and the latency-matched bypass so a
+    // soft-bypassed signal stays sample-aligned with the host's delay
+    // compensation (otherwise a dry/wet null combs instead of cancelling).
+    int reportedLatencySamples() const;
+
     template <typename SampleT>
     void processChannels(SampleT** in, SampleT** out, int numChannels,
                          Steinberg::int32 numSamples);
@@ -48,6 +55,11 @@ private:
     double norm_[kNumAutomatable];
     bool paramsDirty_ = true;
     bool bypassed_ = false;
+
+    // Latency-matched bypass delay (one per channel), kept warm every block so
+    // toggling bypass is click-free. Sized to the maximum possible latency.
+    cotg::dsp::RingBuffer bypassL_;
+    cotg::dsp::RingBuffer bypassR_;
 
     // Per-channel peak gain reduction (positive dB) over the block currently
     // being processed; published to the editor via output parameter changes.

@@ -43,8 +43,11 @@ enum ParamId : Steinberg::Vst::ParamID
 // a smaller fixed visible scale (see kGainReductionMeterDb).
 constexpr double kGainReductionMaxDb = 24.0;
 
-// Fixed visible full scale (dB) of the editor's gain-reduction meter.
-constexpr double kGainReductionMeterDb = 12.0;
+// Fixed visible full scale (dB) of the editor's gain-reduction meter. Matches
+// the printed 0..-6 dB scale on gain_reduction_meter.png; GR beyond this pegs
+// the needle. The transport encoding range (kGainReductionMaxDb) stays wider so
+// the processor can still report larger reductions, which the meter just clamps.
+constexpr double kGainReductionMeterDb = 6.0;
 
 // Plain-value range for a linear parameter, matching the RangeParameter the
 // controller registers. Shared so the processor's normalized<->plain mapping

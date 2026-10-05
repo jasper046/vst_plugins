@@ -15,7 +15,7 @@ struct Params
     double thresholdDb = 0.0;     // -20..0
     double ceilingDb = -0.1;      // -6..0
     double lookAheadMs = 5.0;     // 0..20
-    double releaseMs = 3000.0;    // 50..3000
+    double releaseMs = 2000.0;    // 50..3000
     double stereoLinkPct = 100.0; // 0..100
     bool truePeak = true;         // Off/On
 

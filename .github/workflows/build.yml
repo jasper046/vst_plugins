@@ -43,6 +43,19 @@ jobs:
             libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev \
             libcairo2-dev libgtkmm-3.0-dev libsqlite3-dev libfreetype6-dev
 
+      # Single source of truth for the artifact name version postfix: the
+      # plugin's CMake project() version, so zips end up as e.g.
+      # HyraxLimiter-windows-1.1.0.zip on both CI runs and releases.
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          version=$(sed -nE 's/^project\(HyraxLimiter VERSION ([0-9.]+)\).*/\1/p' plugins/hyrax_limiter/CMakeLists.txt)
+          if [ -z "$version" ]; then
+            echo "Could not read version from plugins/hyrax_limiter/CMakeLists.txt"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -68,7 +81,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.artifact }}
+          name: ${{ matrix.artifact }}-${{ steps.version.outputs.version }}
           path: dist/
 
   release:
@@ -84,6 +97,8 @@ jobs:
         with:
           path: artifacts
 
+      # Each downloaded artifact directory is named <artifact>-<version>, so
+      # the zips (and thus the release assets) carry the version postfix.
       - name: Package per-platform archives
         run: |
           cd artifacts

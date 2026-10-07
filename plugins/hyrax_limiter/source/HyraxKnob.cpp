@@ -3,15 +3,20 @@
 #include "vstgui/uidescription/iviewcreator.h"
 #include "vstgui/uidescription/uiviewfactory.h"
 
+#include <algorithm>
+
 using namespace VSTGUI;
 
 namespace cotg::hyrax {
 
 CMouseEventResult HyraxKnob::onMouseDown(CPoint& where, const CButtonState& buttons)
 {
-    // Double-click (left button) resets the knob to the parameter's default,
-    // wrapped in begin/endEdit so the host records a single automation edit.
-    if (buttons.isLeftButton() && buttons.isDoubleClick())
+    if (!buttons.isLeftButton())
+        return kMouseEventNotHandled;
+
+    // Double-click resets the knob to the parameter's default, wrapped in
+    // begin/endEdit so the host records a single automation edit.
+    if (buttons.isDoubleClick())
     {
         beginEdit();
         setValue(getDefaultValue());
@@ -20,7 +25,74 @@ CMouseEventResult HyraxKnob::onMouseDown(CPoint& where, const CButtonState& butt
         invalid();
         return kMouseEventHandled;
     }
-    return CAnimKnob::onMouseDown(where, buttons);
+
+    // Start a vertical drag instead of CKnobBase's radial gesture (which is
+    // driven by the frame's knob mode, defaulting to kCircularMode). The value
+    // only changes as the mouse moves — the click position itself is ignored.
+    invalidMouseWheelEditTimer(this);
+    beginEdit();
+    lastDragPoint = where;
+    dragValue = dragStartValue = getValue();
+    return kMouseEventHandled;
+}
+
+CMouseEventResult HyraxKnob::onMouseMoved(CPoint& where, const CButtonState& buttons)
+{
+    if (!buttons.isLeftButton() || !isEditing())
+        return kMouseEventNotHandled;
+
+    if (where == lastDragPoint)
+        return kMouseEventHandled;
+
+    // Plain up/down adjustment: dragging up raises the value, dragging down
+    // lowers it. Shift (kZoomModifier) gives fine control.
+    float range = getKnobRange();
+    if (buttons & kZoomModifier)
+        range *= getZoomFactor();
+    const float coef = (getMax() - getMin()) / range;
+
+    const CCoord diff = lastDragPoint.y - where.y;
+    lastDragPoint = where;
+
+    // Accumulate in our own dragValue instead of reading back getValue():
+    // stepped parameters (e.g. Look Ahead in whole ms) get their control value
+    // snapped back to the step grid by VST3Editor on every edit, which would
+    // cancel out incremental deltas smaller than one step (dead or erratic
+    // knob). dragValue is immune to that snap-back.
+    const float prev = dragValue;
+    dragValue += static_cast<float>(diff) * coef;
+    dragValue = std::clamp(dragValue, getMin(), getMax());
+
+    if (dragValue != prev)
+    {
+        setValue(dragValue);
+        valueChanged();
+        if (isDirty())
+            invalid();
+    }
+    return kMouseEventHandled;
+}
+
+CMouseEventResult HyraxKnob::onMouseUp(CPoint& /*where*/, const CButtonState& /*buttons*/)
+{
+    // CKnobBase::onMouseUp would also work, but its mouse-editing state is
+    // never created here, so just close our edit gesture.
+    if (isEditing())
+        endEdit();
+    return kMouseEventHandled;
+}
+
+CMouseEventResult HyraxKnob::onMouseCancel()
+{
+    if (isEditing())
+    {
+        dragValue = dragStartValue;
+        setValue(dragStartValue);
+        valueChanged();
+        invalid();
+        endEdit();
+    }
+    return kMouseEventHandled;
 }
 
 namespace {
